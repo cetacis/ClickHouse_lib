@@ -41,7 +41,6 @@ void registerFunctionsFindCluster(FunctionFactory &);
 void registerFunctionsJSON(FunctionFactory &);
 void registerFunctionsIntrospection(FunctionFactory &);
 void registerFunctionsConsistentHashing(FunctionFactory & factory);
-void registerFunctionsArrayTopK(FunctionFactory & factory);
 
 void registerFunctions()
 {
@@ -81,7 +80,6 @@ void registerFunctions()
     registerFunctionsJSON(factory);
     registerFunctionsIntrospection(factory);
     registerFunctionsConsistentHashing(factory);
-    registerFunctionsArrayTopK(factory);
 }
 
 }

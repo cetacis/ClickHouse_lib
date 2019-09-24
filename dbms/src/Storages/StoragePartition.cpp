@@ -37,7 +37,7 @@ namespace
         for (size_t i = 0; i < num_rows; ++i)
         {
             Data::key_type key = hash128(i, columns.size(), columns);
-            typename Data::iterator it;
+            typename Data::LookupResult it;
             bool inserted;
             partitions_map.emplace(key, it, inserted);
 
