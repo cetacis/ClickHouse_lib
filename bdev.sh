@@ -25,6 +25,8 @@ case "$1" in
     ;;
 esac
 
+mkdir -p "$bdir"
+
 if [ -d build ] && [ ! -h build ]
 then
     echo "A real directory named 'build' should not exist. Remove it manually then proceed again."
