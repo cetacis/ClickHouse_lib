@@ -35,17 +35,18 @@ rebuild=0
 if [ -f build/build.ninja ] && [ "$(basename "$(readlink -f build)")" = "$bdir" ]
 then
     echo "Incremental build is possible."
+    cd build
 else
-    ln -sfT "$bdir" build
     rebuild=1
 fi
 
-cd build
 
 if [ $rebuild -eq 1 ] || [ "$(basename "$0")" = "r" ]; then
     read -p "Rebuild from scratch is required (needed). Are you sure? [Enter to continue, Ctrl-C to quit]" -n 1 -r
     echo
 
+    ln -sfT "$bdir" build
+    cd build
     rm -rf ./*
 
     $configure
