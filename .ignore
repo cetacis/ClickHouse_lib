@@ -1,0 +1,8 @@
+contrib
+miniconda3
+website
+docs
+ci
+ch*
+build*
+/data*
