@@ -5,7 +5,7 @@ set -e
 
 cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
-dir=${1:-build-rel}
+dir=${1:-build}
 
 function finish() {
     echo exit
