@@ -13,10 +13,9 @@ function finish() {
 
 trap finish EXIT
 
-# make sure there is something for cleaning
-ln -sfT "$dir" obj-x86_64-linux-gnu
-
-debian/rules clean
+rm -rf debian
+cp -r src/debian .
+cp rules control debian/
 
 ln -sfT "$dir" obj-x86_64-linux-gnu
 
@@ -26,7 +25,7 @@ mkdir "$dir"
 
 ln -sfT "$dir" /data/clickhouse-debs
 
-# fakeroot debian/rules binary
+fakeroot debian/rules binary
 
 function amos_dh_binary () {
    dh_testdir -O--buildsystem=cmake
@@ -83,7 +82,7 @@ function amos_dh_binary () {
    dh_builddeb --destdir /data/clickhouse-debs -- -Z gzip # Older systems don't have "xz", so use "gzip" instead.
 }
 
-fakeroot bash -c "$(declare -f amos_dh_binary) && amos_dh_binary"
+# fakeroot bash -c "$(declare -f amos_dh_binary) && amos_dh_binary"
 
 cd "$dir"
 

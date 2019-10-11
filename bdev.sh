@@ -41,8 +41,14 @@ case "$type" in
         cmake ../src -DENABLE_ICU=0 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=None -DCMAKE_INSTALL_SYSCONFDIR=/etc -DCMAKE_INSTALL_LOCALSTATEDIR=/var -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON -DSANITIZE=undefined -DENABLE_EMBEDDED_COMPILER=1 -DADD_GDB_INDEX_FOR_GOLD=1 -DENABLE_TESTS=0 -DENABLE_UTILS=0 -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_EXE_LINKER_FLAGS=-Wl,--dynamic-linker,/lib64/ld-linux-x86-64.so.2
     }
     ;;
+"uni")
+    bdir=build-uni
+    function configure() {
+        cmake ../src -DCMAKE_EXE_LINKER_FLAGS='-s -Wl,--dynamic-linker,/lib64/ld-linux-x86-64.so.2'
+    }
+    ;;
 *)
-    echo "Usage: $0 [dev|rel|ub]"
+    echo "Usage: $0 [dev|rel|ub|uni]"
     exit 1
     ;;
 esac
