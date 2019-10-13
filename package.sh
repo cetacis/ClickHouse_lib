@@ -17,7 +17,7 @@ rm -rf debian
 cp -r src/debian .
 cp rules control debian/
 
-ln -sfT "$dir" obj-x86_64-linux-gnu
+ln -sfT "$dir" obj-"$(uname -m)"-linux-gnu
 
 dir=/data/clickhouse-debs-$(git describe --always --dirty --abbrev=10 --exclude '*')-$(date +%Y-%m-%d-%H-%M-%S)
 

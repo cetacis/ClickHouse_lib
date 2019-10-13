@@ -2,6 +2,19 @@
 
 set -e
 
+arch=$(dpkg --print-architecture)
+
+if [ "$arch" = "amd64" ]
+then
+   target="x86_64"
+elif [ "$arch" = "arm64" ]
+then
+   target="aarch64"
+else
+    echo "Only support arch = amd64|arm64. Given $arch."
+    exit 1
+fi
+
 cd /data/clickhouse-debs
 CUR_DIR=$PWD
 VERSION_FULL=$(dpkg-deb --showformat '${Version}\n' -W ./*.deb | head -1)
@@ -76,11 +89,11 @@ cat ${PACKAGE}-$VERSION_FULL-2.spec_tmp >>${PACKAGE}-$VERSION_FULL-2.spec
 rpm_pack
 
 PACKAGE=clickhouse-common-static
-ARCH=amd64
-TARGET=x86_64
+ARCH=$arch
+TARGET=$target
 unpack_pack
 
 PACKAGE=clickhouse-common-static-dbg
-ARCH=amd64
-TARGET=x86_64
+ARCH=$arch
+TARGET=$target
 unpack_pack
