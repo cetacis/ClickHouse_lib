@@ -54,6 +54,13 @@ case "$type" in
         cmake ../src -DENABLE_CAPNP=0 -DENABLE_ICU=0 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=None -DCMAKE_INSTALL_SYSCONFDIR=/etc -DCMAKE_INSTALL_LOCALSTATEDIR=/var -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON -DSANITIZE=undefined -DENABLE_EMBEDDED_COMPILER=1 -DADD_GDB_INDEX_FOR_GOLD=1 -DENABLE_TESTS=0 -DENABLE_UTILS=0 -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_EXE_LINKER_FLAGS=-Wl,--dynamic-linker,$ld
     }
     ;;
+"llvm")
+    bdir=build-llvm
+    PATH=/home/amos/gentoo/usr/lib/llvm/7/bin/:$PATH
+    function configure() {
+        cmake ../src -DENABLE_CAPNP=0 -DENABLE_ICU=0 -DUSE_LIBCXX=0 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=None -DCMAKE_INSTALL_SYSCONFDIR=/etc -DCMAKE_INSTALL_LOCALSTATEDIR=/var -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON -DENABLE_EMBEDDED_COMPILER=1 -DADD_GDB_INDEX_FOR_GOLD=0 -DENABLE_TESTS=0 -DENABLE_UTILS=0 -DCMAKE_EXE_LINKER_FLAGS=-Wl,--dynamic-linker,$ld
+    }
+    ;;
 "uni")
     bdir=build-uni
     function configure() {
@@ -92,4 +99,9 @@ if [ $rebuild -eq 1 ] || [ "$(basename "$0")" = "r" ]; then
     configure
 fi
 
-ninja
+if [ "$(basename "$0")" = "bv" ]
+then
+   ninja -v
+else
+   ninja
+fi

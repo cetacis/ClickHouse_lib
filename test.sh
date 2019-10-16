@@ -43,6 +43,9 @@ pf1)
 pf2)
     docker run --rm --ulimit nofile=1000000:1000000 --volume=/data/chorigin-debs:/package_folder --volume=/tmp/test_output2:/test_output --volume=/tmp/server_log:/var/log/clickhouse-server --volume=/data/clickhouse-testdata:/var/lib/clickhouse -e DOWNLOAD_DATASETS=0 -e TESTS_TO_RUN='--input-files /usr/share/clickhouse-test/performance/general_purpose_hashes.xml --query-indexes 20' "$docker"/clickhouse-performance-test
     ;;
+pf3)
+    docker run --rm --ulimit nofile=1000000:1000000 --volume=/data/pfdebs:/package_folder --volume=/tmp/test_output3:/test_output --volume=/tmp/server_log:/var/log/clickhouse-server --volume=/data/clickhouse-testdata:/var/lib/clickhouse -e DOWNLOAD_DATASETS=0 -e TESTS_TO_RUN='--input-files /usr/share/clickhouse-test/performance/' "$docker"/clickhouse-performance-test
+    ;;
 *)
     echo "There is no test for this variant yet."
     exit 1
