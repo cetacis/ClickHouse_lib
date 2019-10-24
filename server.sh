@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-build/dbms/programs/clickhouse server --config etc/config.xml "$@"
+"$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/build/dbms/programs/clickhouse server --config etc/config.xml "$@"

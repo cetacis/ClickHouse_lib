@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+docker run --network=host --rm -t --volume=/data/mac_output:/output --volume=/data/ClickHouse/src:/build --volume=/data/mac_ccache:/ccache -e CC=clang-8 -e CXX=clang++-8 -e CCACHE_DIR=/ccache -e CCACHE_BASEDIR=/build -e CCACHE_NOHASHDIR=true -e CCACHE_COMPILERCHECK=content -e AUTHOR='amosbird' -e CMAKE_FLAGS="$CMAKE_FLAGS -DADD_GDB_INDEX_FOR_GOLD=1 -DCMAKE_C_COMPILER=clang-8 -DCMAKE_CXX_COMPILER=clang++-8 -DCMAKE_AR:FILEPATH=/cctools/bin/x86_64-apple-darwin-ar -DCMAKE_RANLIB:FILEPATH=/cctools/bin/x86_64-apple-darwin-ranlib -DCMAKE_SYSTEM_NAME=Darwin -DSDK_PATH=/cctools/MacOSX10.14.sdk -DLINKER_NAME=/cctools/bin/x86_64-apple-darwin-ld" yandex/clickhouse-binary-builder
