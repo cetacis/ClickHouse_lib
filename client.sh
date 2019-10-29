@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
+export LD_BIND_NOW=1
+clickhouse="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/build/dbms/programs/clickhouse
 case "$(basename "$0")" in
     cq)
-        "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/build/dbms/programs/clickhouse client -mn <<< "$*"
+        $clickhouse client -mn <<< "$*"
         ;;
     c)
-        "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/build/dbms/programs/clickhouse client -n "$@"
+        $clickhouse client -n "$@"
         ;;
 esac

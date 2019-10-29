@@ -47,10 +47,10 @@ pf3)
     docker run --rm --ulimit nofile=1000000:1000000 --volume=/data/pfdebs:/package_folder --volume=/tmp/test_output3:/test_output --volume=/tmp/server_log:/var/log/clickhouse-server --volume=/data/clickhouse-testdata:/var/lib/clickhouse -e DOWNLOAD_DATASETS=0 -e TESTS_TO_RUN='--input-files /usr/share/clickhouse-test/performance/' "$docker"/clickhouse-performance-test
     ;;
 tq)
-    { cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests && python2 clickhouse-test --shard "$@"; }
+    { cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests && clickhouse-test --shard --zookeeper "$@"; }
     ;;
 tp)
-    { cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests/performance && clickhouse-performance-test --shard "$@"; }
+    { cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests/performance && clickhouse-performance-test --shard --zookeeper "$@"; }
     ;;
 *)
     echo "There is no test for this variant yet."
