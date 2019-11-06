@@ -24,12 +24,17 @@ else
     exit 1
 fi
 
+sudo chmod -R 777 /tmp/test_output /tmp/server_log
+
 case "$(basename "$0")" in
 ub)
     docker run --rm -t --ulimit nofile=1000000:1000000 --volume=/data/clickhouse-debs:/package_folder --volume=/tmp/test_output:/test_output --volume=/tmp/server_log:/var/log/clickhouse-server -e SKIP_TESTS_OPTION="--skip 00281 capnproto avx2 query_profiler" -e ADDITIONAL_OPTIONS="--hung-check" "$docker"/clickhouse-stateless-test
     ;;
 rel)
     docker run --rm -t --ulimit nofile=1000000:1000000 --volume=/data/clickhouse-debs:/package_folder --volume=/tmp/test_output:/test_output --volume=/tmp/server_log:/var/log/clickhouse-server -e SKIP_TESTS_OPTION="--skip avx2" -e ADDITIONAL_OPTIONS="--hung-check" "$docker"/clickhouse-stateless-test
+    ;;
+stress)
+    docker run --rm --ulimit nofile=1000000:1000000 --volume=/data/clickhouse-debs:/package_folder --volume=/tmp/test_output:/test_output --volume=/tmp/server_log:/var/log/clickhouse-server "$docker"/clickhouse-stress-test
     ;;
 uni)
     docker run --rm -t --ulimit nofile=1000000:1000000 --volume=/data/ClickHouse/build/dbms/unit_tests_dbms:/unit_tests_dbms --volume=/tmp/test_output:/test_output "$docker"/clickhouse-unit-test

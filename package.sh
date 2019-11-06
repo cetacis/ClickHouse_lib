@@ -16,6 +16,7 @@ trap finish EXIT
 rm -rf debian
 cp -r src/debian .
 cp rules control debian/
+echo > debian/clickhouse-server.config
 
 ln -sfT "$dir" obj-"$(uname -m)"-linux-gnu
 

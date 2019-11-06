@@ -13,6 +13,9 @@ s5)
     $clickhouse server --config "$config_path"/config-s5.xml "$@"
     ;;
 so)
+    "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/build-origin/dbms/programs/clickhouse server --config "$config_path"/config-origin.xml "$@"
+    ;;
+so2)
     "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/build-origin/dbms/programs/clickhouse server --config "$config_path"/config.xml "$@"
     ;;
 *)

@@ -2,8 +2,8 @@
 <yandex>
     <logger>
         <level>trace</level>
-        <log>clickhouse-server.log</log>
-        <errorlog>clickhouse-server.err.log</errorlog>
+        <log>clickhouse-server-origin.log</log>
+        <errorlog>clickhouse-server-origin.err.log</errorlog>
         <size>1000M</size>
         <count>10</count>
     </logger>
@@ -14,8 +14,8 @@
 
     <user_files_path>/</user_files_path>
 
-    <http_port>8123</http_port>
-    <tcp_port>9000</tcp_port>
+    <http_port>8124</http_port>
+    <tcp_port>9001</tcp_port>
     <!-- <mysql_port>9001</mysql_port> -->
 
     <!-- For HTTPS and SSL over native protocol. -->
@@ -58,7 +58,7 @@
     -->
 
     <!-- Port for communication between replicas. Used for data exchange. -->
-    <interserver_http_port>9009</interserver_http_port>
+    <interserver_http_port>9010</interserver_http_port>
     <interserver_http_host>201.nobida.cn</interserver_http_host>
 
     <!-- Hostname that is used by other replicas to request this server.
@@ -98,10 +98,10 @@
 
 
     <!-- Path to data directory, with trailing slash. -->
-    <path>data</path>
+    <path>data-origin</path>
 
     <!-- Path to temporary data for processing hard queries. -->
-    <tmp_path>data/tmp/</tmp_path>
+    <tmp_path>data-origin/tmp/</tmp_path>
 
     <!-- Path to configuration file with users, access rights, profiles of settings, quotas. -->
     <users_config>users.xml</users_config>
@@ -140,7 +140,7 @@
             <shard>
                 <replica>
                     <host>localhost</host>
-                    <port>9000</port>
+                    <port>9001</port>
                 </replica>
             </shard>
         </test_shard_localhost>
