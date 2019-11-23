@@ -2,8 +2,8 @@
 <yandex>
     <logger>
         <level>trace</level>
-        <log>clickhouse-server.log</log>
-        <errorlog>clickhouse-server.err.log</errorlog>
+        <log>clickhouse-server-origin2.log</log>
+        <errorlog>clickhouse-server-origin2.err.log</errorlog>
         <size>1000M</size>
         <count>10</count>
     </logger>
@@ -18,8 +18,11 @@
     <tcp_port>9000</tcp_port>
     <!-- <mysql_port>9001</mysql_port> -->
 
-    <!-- <https_port>8443</https_port> -->
+    <!-- For HTTPS and SSL over native protocol. -->
+    <!--
+    <https_port>8443</https_port>
     <tcp_ssl_port>9440</tcp_ssl_port>
+    -->
 
     <!-- Used with https_port and tcp_ssl_port. Full ssl options list: https://github.com/yandex/ClickHouse/blob/master/contrib/libpoco/NetSSL_OpenSSL/include/Poco/Net/SSLManager.h#L71 -->
     <openSSL>
@@ -95,10 +98,10 @@
 
 
     <!-- Path to data directory, with trailing slash. -->
-    <path>data</path>
+    <path>data-origin2</path>
 
     <!-- Path to temporary data for processing hard queries. -->
-    <tmp_path>data/tmp/</tmp_path>
+    <tmp_path>data-origin2/tmp/</tmp_path>
 
     <!-- Path to configuration file with users, access rights, profiles of settings, quotas. -->
     <users_config>users.xml</users_config>
@@ -141,66 +144,6 @@
                 </replica>
             </shard>
         </test_shard_localhost>
-
-        <test_unavailable_shard>
-            <shard>
-                <replica>
-                    <host>localhost</host>
-                    <port>9000</port>
-                </replica>
-            </shard>
-            <shard>
-                <replica>
-                    <host>localhost</host>
-                    <port>1</port>
-                </replica>
-            </shard>
-        </test_unavailable_shard>
-        <test_shard_localhost>
-            <shard>
-                <replica>
-                    <host>localhost</host>
-                    <port>9000</port>
-                </replica>
-            </shard>
-        </test_shard_localhost>
-        <test_cluster_two_shards>
-            <shard>
-                <replica>
-                    <host>127.0.0.1</host>
-                    <port>9000</port>
-                </replica>
-            </shard>
-            <shard>
-                <replica>
-                    <host>127.0.0.2</host>
-                    <port>9000</port>
-                </replica>
-            </shard>
-        </test_cluster_two_shards>
-        <test_cluster_two_shards_localhost>
-            <shard>
-                <replica>
-                    <host>localhost</host>
-                    <port>9000</port>
-                </replica>
-            </shard>
-            <shard>
-                <replica>
-                    <host>localhost</host>
-                    <port>9000</port>
-                </replica>
-            </shard>
-        </test_cluster_two_shards_localhost>
-        <test_shard_localhost_secure>
-            <shard>
-                <replica>
-                    <host>localhost</host>
-                    <port>9440</port>
-                    <secure>1</secure>
-                </replica>
-            </shard>
-        </test_shard_localhost_secure>
     </remote_servers>
 
 

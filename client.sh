@@ -9,4 +9,7 @@ case "$(basename "$0")" in
     c)
         $clickhouse client -n "$@"
         ;;
+    co)
+        $clickhouse client --port 9001 -n "$@"
+        ;;
 esac
