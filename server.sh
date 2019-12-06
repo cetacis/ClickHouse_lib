@@ -5,7 +5,7 @@ export LD_BIND_NOW=1
 
 cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
-clickhouse=build-dev/dbms/programs/clickhouse
+clickhouse=build/dbms/programs/clickhouse
 config_path=etc
 
 case "$(basename "$0")" in
