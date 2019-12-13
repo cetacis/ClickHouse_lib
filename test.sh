@@ -24,6 +24,7 @@ else
     exit 1
 fi
 
+sudo mkdir /tmp/test_output /tmp/server_log
 sudo chmod -R 777 /tmp/test_output /tmp/server_log
 
 case "$(basename "$0")" in
