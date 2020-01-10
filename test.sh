@@ -24,7 +24,7 @@ else
     exit 1
 fi
 
-sudo mkdir /tmp/test_output /tmp/server_log
+sudo mkdir -p /tmp/test_output /tmp/server_log
 sudo chmod -R 777 /tmp/test_output /tmp/server_log
 
 case "$(basename "$0")" in
@@ -53,16 +53,22 @@ pf3)
     docker run --rm -t --ulimit nofile=1000000:1000000 --volume=/data/pfdebs:/package_folder --volume=/tmp/test_output3:/test_output --volume=/tmp/server_log:/var/log/clickhouse-server --volume=/data/clickhouse-testdata:/var/lib/clickhouse -e DOWNLOAD_DATASETS=0 -e TESTS_TO_RUN='--input-files /usr/share/clickhouse-test/performance/' "$docker"/clickhouse-performance-test
     ;;
 tq)
-    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests && clickhouse-test --no-stateful --shard --zookeeper "$@" )
+    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests && ./clickhouse-test --no-stateful --shard --zookeeper "$@" )
     ;;
 ts)
-    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests && clickhouse-test --no-stateless --shard --zookeeper "$@" )
+    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests && ./clickhouse-test --no-stateless --shard --zookeeper "$@" )
     ;;
 tp)
     ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests/performance && clickhouse-performance-test --input-files "$@" )
     ;;
 tp1)
     ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests/performance && clickhouse-performance-test --port 9001 --input-files "$@" )
+    ;;
+tbs)
+    clickhouse benchmark --max_threads 1 <<< $@
+    ;;
+tbs1)
+    clickhouse benchmark --max_threads 1 --port 9001 <<< $@
     ;;
 tb)
     clickhouse benchmark <<< $@
