@@ -16,7 +16,7 @@
 
     <http_port>8123</http_port>
     <tcp_port>9000</tcp_port>
-    <!-- <mysql_port>9001</mysql_port> -->
+    <mysql_port>9091</mysql_port>
 
     <!-- <https_port>8443</https_port> -->
     <tcp_ssl_port>9440</tcp_ssl_port>
