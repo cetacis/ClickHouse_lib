@@ -8,8 +8,11 @@ case "$(basename "$0")" in
     cq)
         $clickhouse client --config "$base"/etc/config-client.xml -tmn --query "$*"
         ;;
+    cqo)
+        $clickhouse_origin client --port 9001 --config "$base"/etc/config-client.xml -tmn --query "$*"
+        ;;
     c)
-        $clickhouse_origin client -n "$@"
+        $clickhouse_origin client -mn "$@"
         ;;
     co)
         $clickhouse_origin client --port 9001 -n "$@"
