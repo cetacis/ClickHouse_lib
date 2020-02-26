@@ -2,19 +2,18 @@
 
 export LD_BIND_NOW=1
 base=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
-clickhouse="$base"/build-ori/dbms/programs/clickhouse
-clickhouse_origin="$base"/build-ori/dbms/programs/clickhouse
+clickhouse="$base"/build-dev/dbms/programs/clickhouse
 case "$(basename "$0")" in
     cq)
         $clickhouse client --config "$base"/etc/config-client.xml -tmn --query "$*"
         ;;
     cqo)
-        $clickhouse_origin client --port 9001 --config "$base"/etc/config-client.xml -tmn --query "$*"
+        $clickhouse client --port 9001 --config "$base"/etc/config-client.xml -tmn --query "$*"
         ;;
     c)
-        $clickhouse_origin client -mn "$@"
+        $clickhouse client --case_insensitive_suggestion -n "$@"
         ;;
     co)
-        $clickhouse_origin client --port 9001 -n "$@"
+        $clickhouse client --case_insensitive_suggestion --port 9001 -n "$@"
         ;;
 esac
