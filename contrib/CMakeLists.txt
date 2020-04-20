@@ -336,3 +336,7 @@ add_subdirectory(FastMemcpy)
 add_subdirectory(widecharwidth)
 add_subdirectory(consistent-hashing)
 add_subdirectory(consistent-hashing-sumbur)
+
+if (USE_PYTHON)
+    add_subdirectory (cpython-cmake)
+endif()

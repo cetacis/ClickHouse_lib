@@ -151,3 +151,9 @@
 [submodule "website/images/feathericons"]
 	path = website/images/feathericons
 	url = https://github.com/feathericons/feather
+[submodule "contrib/cpython"]
+	path = contrib/cpython
+	url = https://github.com/amosbird/cpython
+[submodule "contrib/cpython-cmake"]
+	path = contrib/cpython-cmake
+	url = https://github.com/amosbird/python-cmake-buildsystem
