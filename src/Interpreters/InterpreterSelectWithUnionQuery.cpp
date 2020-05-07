@@ -87,11 +87,13 @@ InterpreterSelectWithUnionQuery::InterpreterSelectWithUnionQuery(
         const Names & current_required_result_column_names
             = query_num == 0 ? required_result_column_names : required_result_column_names_for_other_selects[query_num];
 
-        nested_interpreters.emplace_back(std::make_unique<InterpreterSelectQuery>(
+        auto x = std::make_unique<InterpreterSelectQuery>(
             ast.list_of_selects->children.at(query_num),
             *context,
             options,
-            current_required_result_column_names));
+            current_required_result_column_names);
+        x->init(current_required_result_column_names);
+        nested_interpreters.push_back(std::move(x));
     }
 
     /// Determine structure of the result.

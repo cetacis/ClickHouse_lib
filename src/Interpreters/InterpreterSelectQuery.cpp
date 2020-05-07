@@ -216,7 +216,7 @@ InterpreterSelectQuery::InterpreterSelectQuery(
     std::optional<Pipe> input_pipe_,
     const StoragePtr & storage_,
     const SelectQueryOptions & options_,
-    const Names & required_result_column_names)
+    const Names & )
     : options(options_)
     /// NOTE: the query almost always should be cloned because it will be modified during analysis.
     , query_ptr(options.modify_inplace ? query_ptr_ : query_ptr_->clone())
@@ -225,6 +225,9 @@ InterpreterSelectQuery::InterpreterSelectQuery(
     , input(input_)
     , input_pipe(std::move(input_pipe_))
     , log(&Logger::get("InterpreterSelectQuery"))
+{}
+
+void InterpreterSelectQuery::init(const Names & required_result_column_names)
 {
     checkStackSize();
 

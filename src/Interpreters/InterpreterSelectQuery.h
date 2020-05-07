@@ -51,6 +51,8 @@ public:
         const SelectQueryOptions &,
         const Names & required_result_column_names_ = Names{});
 
+    void init(const Names & required_result_column_names_ = Names{});
+
     /// Read data not from the table specified in the query, but from the prepared source `input`.
     InterpreterSelectQuery(
         const ASTPtr & query_ptr_,
