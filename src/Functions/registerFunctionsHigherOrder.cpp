@@ -12,6 +12,7 @@ void registerFunctionArrayCompact(FunctionFactory & factory);
 void registerFunctionArraySum(FunctionFactory & factory);
 void registerFunctionArrayFirst(FunctionFactory & factory);
 void registerFunctionArrayFirstIndex(FunctionFactory & factory);
+void registerFunctionArrayFirstMinIndex(FunctionFactory & factory);
 void registerFunctionsArrayFill(FunctionFactory & factory);
 void registerFunctionsArraySplit(FunctionFactory & factory);
 void registerFunctionsArraySort(FunctionFactory & factory);
@@ -30,6 +31,7 @@ void registerFunctionsHigherOrder(FunctionFactory & factory)
     registerFunctionArraySum(factory);
     registerFunctionArrayFirst(factory);
     registerFunctionArrayFirstIndex(factory);
+    registerFunctionArrayFirstMinIndex(factory);
     registerFunctionsArrayFill(factory);
     registerFunctionsArraySplit(factory);
     registerFunctionsArraySort(factory);
