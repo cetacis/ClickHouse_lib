@@ -38,7 +38,7 @@ stress)
     docker run --rm --ulimit nofile=1000000:1000000 --volume=/data/clickhouse-debs:/package_folder --volume=/tmp/test_output:/test_output --volume=/tmp/server_log:/var/log/clickhouse-server "$docker"/clickhouse-stress-test
     ;;
 uni)
-    docker run --rm -t --ulimit nofile=1000000:1000000 --volume=/data/ClickHouse/build/dbms/unit_tests_dbms:/unit_tests_dbms --volume=/tmp/test_output:/test_output "$docker"/clickhouse-unit-test
+    docker run --rm -t --ulimit nofile=1000000:1000000 --volume=/data/ClickHouse/build/unit_tests_dbms:/unit_tests_dbms --volume=/tmp/test_output:/test_output "$docker"/clickhouse-unit-test
     ;;
 pf)
     docker run --rm -t --ulimit nofile=1000000:1000000 --volume=/data/clickhouse-debs:/package_folder --volume=/tmp/test_output:/test_output --volume=/tmp/server_log:/var/log/clickhouse-server --volume=/data/clickhouse-testdata:/var/lib/clickhouse -e DOWNLOAD_DATASETS=0 -e TESTS_TO_RUN='--recursive --input-files /usr/share/clickhouse-test/performance/' "$docker"/clickhouse-performance-test
@@ -53,16 +53,16 @@ pf3)
     docker run --rm -t --ulimit nofile=1000000:1000000 --volume=/data/pfdebs:/package_folder --volume=/tmp/test_output3:/test_output --volume=/tmp/server_log:/var/log/clickhouse-server --volume=/data/clickhouse-testdata:/var/lib/clickhouse -e DOWNLOAD_DATASETS=0 -e TESTS_TO_RUN='--input-files /usr/share/clickhouse-test/performance/' "$docker"/clickhouse-performance-test
     ;;
 tq)
-    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests && ./clickhouse-test --no-stateful --shard --zookeeper "$@" )
+    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests && ./clickhouse-test --no-stateful --shard --zookeeper "$@" )
     ;;
 ts)
-    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests && ./clickhouse-test --no-stateless --shard --zookeeper "$@" )
+    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests && ./clickhouse-test --no-stateless --shard --zookeeper "$@" )
     ;;
 tp)
-    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests/performance && clickhouse-performance-test --input-files "$@" )
+    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests/performance && clickhouse-performance-test --input-files "$@" )
     ;;
 tp1)
-    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/dbms/tests/performance && clickhouse-performance-test --port 9001 --input-files "$@" )
+    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests/performance && clickhouse-performance-test --port 9001 --input-files "$@" )
     ;;
 tbs)
     clickhouse benchmark --max_threads 1 <<< $@

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
+until netstat -plnt 2>/dev/null | rg -q 9000 ; do sleep 0.2; done
 export LD_BIND_NOW=1
 base=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
-clickhouse="$base"/build-dev/dbms/programs/clickhouse
+clickhouse="$base"/build/programs/clickhouse
 case "$(basename "$0")" in
     cq)
         $clickhouse client --config "$base"/etc/config-client.xml -tmn --query "$*"
@@ -11,9 +12,9 @@ case "$(basename "$0")" in
         $clickhouse client --port 9001 --config "$base"/etc/config-client.xml -tmn --query "$*"
         ;;
     c)
-        $clickhouse client --case_insensitive_suggestion -n "$@"
+        $clickhouse client -n "$@"
         ;;
     co)
-        $clickhouse client --case_insensitive_suggestion --port 9001 -n "$@"
+        $clickhouse client --port 9001 -n "$@"
         ;;
 esac
