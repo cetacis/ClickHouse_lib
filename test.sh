@@ -24,8 +24,8 @@ else
     exit 1
 fi
 
-sudo mkdir -p /tmp/test_output /tmp/server_log
-sudo chmod -R 777 /tmp/test_output /tmp/server_log
+mkdir -p /tmp/test_output /tmp/server_log
+chmod -R 777 /tmp/test_output /tmp/server_log
 
 case "$(basename "$0")" in
 ub)
@@ -59,7 +59,7 @@ ts)
     ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests && ./clickhouse-test --no-stateless --shard --zookeeper "$@" )
     ;;
 tp)
-    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests/performance && clickhouse-performance-test --input-files "$@" )
+    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests/performance && clickhouse-performance-test --port 19000 --input-files "$@" )
     ;;
 tp1)
     ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests/performance && clickhouse-performance-test --port 9001 --input-files "$@" )
