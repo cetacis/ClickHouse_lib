@@ -14,8 +14,8 @@
 
     <user_files_path>/</user_files_path>
 
-    <http_port>8124</http_port>
-    <tcp_port>9001</tcp_port>
+    <http_port>58144</http_port>
+    <tcp_port>19001</tcp_port>
     <!-- <mysql_port>9001</mysql_port> -->
 
     <!-- For HTTPS and SSL over native protocol. -->
@@ -70,8 +70,8 @@
     -->
 
     <!-- Listen specified host. use :: (wildcard IPv6 address), if you want to accept connections both with IPv4 and IPv6 from everywhere. -->
-    <listen_host>::</listen_host>
-    <!-- <listen_host>0.0.0.0</listen_host> -->
+    <!-- <listen_host>::</listen_host> -->
+    <listen_host>0.0.0.0</listen_host>
 
     <max_connections>4096</max_connections>
     <keep_alive_timeout>10</keep_alive_timeout>
@@ -144,6 +144,22 @@
                 </replica>
             </shard>
         </test_shard_localhost>
+        <test_cluster_two_shards>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <replica>
+                    <host>127.0.0.1</host>
+                    <port>19000</port>
+                </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <replica>
+                    <host>127.0.0.1</host>
+                    <port>19001</port>
+                </replica>
+            </shard>
+        </test_cluster_two_shards>
     </remote_servers>
 
 
@@ -158,7 +174,13 @@
          See https://clickhouse.yandex/reference_en.html#Data%20replication
       -->
     <zookeeper>
-        <implementation>testkeeper</implementation>
+        <node>
+            <host>localhost</host>
+            <port>32181</port>
+        </node>
+        <session_timeout_ms>30000</session_timeout_ms>
+        <operation_timeout_ms>10000</operation_timeout_ms>
+        <!-- <implementation>testkeeper</implementation> -->
     </zookeeper>
 
     <!-- Substitutions for parameters of replicated tables.
@@ -167,6 +189,7 @@
          See https://clickhouse.yandex/reference_en.html#Creating%20replicated%20tables
       -->
     <macros>
+        <shard>1</shard>
         <test>Hello, world!</test>
     </macros>
 

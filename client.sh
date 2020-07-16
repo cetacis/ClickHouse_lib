@@ -17,4 +17,7 @@ case "$(basename "$0")" in
     co)
         $clickhouse client --port 9001 -n "$@"
         ;;
+    ct)
+        $clickhouse client --host dataarch-ls-c1.idczw.hb1.kwaidc.com --port 9100 -n "$@"
+        ;;
 esac

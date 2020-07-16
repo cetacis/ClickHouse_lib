@@ -5,7 +5,7 @@ export LD_BIND_NOW=1
 
 # export LIBUNWIND_PRINT_DWARF=1
 # export LIBUNWIND_PRINT_UNWINDING=1
-export LIBUNWIND_PRINT_APIS=1
+# export LIBUNWIND_PRINT_APIS=1
 cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 clickhouse=build/programs/clickhouse
@@ -17,7 +17,7 @@ s)
     $clickhouse server --config "$config_path"/config-dev.xml "$@"
     ;;
 s2)
-    $clickhouse server --config "$config_path"/config-or2.xml "$@"
+    $clickhouse server --config "$config_path"/config-ori.xml "$@"
     ;;
 s5)
     $clickhouse server --config "$config_path"/config-s5.xml "$@"

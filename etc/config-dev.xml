@@ -11,12 +11,30 @@
     <core_dump>
       <size_limit>0</size_limit>
     </core_dump>
+    <!-- <storage_configuration> -->
+    <!--     <disks> -->
+    <!--         <hdfs> -->
+    <!--             <type>hdfs</type> -->
+    <!--             <endpoint>hdfs://localhost:34581/</endpoint> -->
+    <!--         </hdfs> -->
+    <!--     </disks> -->
+    <!--     <policies> -->
+    <!--         <hdfs> -->
+    <!--             <volumes> -->
+    <!--                 <main> -->
+    <!--                     <disk>hdfs</disk> -->
+    <!--                 </main> -->
+    <!--             </volumes> -->
+    <!--         </hdfs> -->
+    <!--     </policies> -->
+    <!-- </storage_configuration> -->
 
     <user_files_path>/</user_files_path>
 
+    <dns_cache_update_period>10000000</dns_cache_update_period>
     <http_port>8123</http_port>
     <tcp_port>19000</tcp_port>
-    <mysql_port>19091</mysql_port>
+    <mysql_port>59099</mysql_port>
 
     <!-- <https_port>8443</https_port> -->
     <tcp_ssl_port>9440</tcp_ssl_port>
@@ -166,15 +184,17 @@
         </test_shard_localhost>
         <test_cluster_two_shards>
             <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
                     <host>127.0.0.1</host>
-                    <port>9000</port>
+                    <port>19000</port>
                 </replica>
             </shard>
             <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
-                    <host>127.0.0.2</host>
-                    <port>9000</port>
+                    <host>127.0.0.1</host>
+                    <port>19001</port>
                 </replica>
             </shard>
         </test_cluster_two_shards>
@@ -215,7 +235,13 @@
          See https://clickhouse.yandex/reference_en.html#Data%20replication
       -->
     <zookeeper>
-        <implementation>testkeeper</implementation>
+        <node>
+            <host>localhost</host>
+            <port>32181</port>
+        </node>
+        <session_timeout_ms>30000</session_timeout_ms>
+        <operation_timeout_ms>10000</operation_timeout_ms>
+        <!-- <implementation>testkeeper</implementation> -->
     </zookeeper>
 
     <!-- Substitutions for parameters of replicated tables.
@@ -224,6 +250,7 @@
          See https://clickhouse.yandex/reference_en.html#Creating%20replicated%20tables
       -->
     <macros>
+        <shard>0</shard>
         <test>Hello, world!</test>
     </macros>
 
