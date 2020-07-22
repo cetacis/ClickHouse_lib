@@ -6,7 +6,7 @@ base=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 clickhouse="$base"/build/programs/clickhouse
 case "$(basename "$0")" in
     cq)
-        $clickhouse client --config "$base"/etc/config-client.xml -tmn --query "$*"
+        $clickhouse client --port 19000 --config "$base"/etc/config-client.xml -tmn --query "$*"
         ;;
     cqo)
         $clickhouse client --port 9001 --config "$base"/etc/config-client.xml -tmn --query "$*"
