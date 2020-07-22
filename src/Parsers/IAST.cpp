@@ -152,4 +152,17 @@ void IAST::FormatSettings::writeIdentifier(const String & name) const
     out.next();
 }
 
+void IAST::dumpJSON(std::ostream & ostr) const
+{
+    ostr << "{\"id\": \""  << getID() << "\", \"children\": [";
+    const char * sep = "";
+    for (const auto & child : children)
+    {
+        ostr << sep;
+        child->dumpJSON(ostr);
+        sep = ",";
+    }
+    ostr << "]}";
+}
+
 }

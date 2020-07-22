@@ -85,6 +85,8 @@ public:
             child->dumpTree(ostr, indent + 1);
     }
 
+    void dumpJSON(std::ostream & ostr) const;
+
     /** Check the depth of the tree.
       * If max_depth is specified and the depth is greater - throw an exception.
       * Returns the depth of the tree.

@@ -36,6 +36,7 @@ target_link_libraries(clickhouse_functions
         clickhouse_dictionaries_embedded
         consistent-hashing
         consistent-hashing-sumbur
+        clickhouse_parsers
         dbms
         metrohash
         murmurhash
