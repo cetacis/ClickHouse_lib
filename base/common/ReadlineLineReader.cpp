@@ -15,6 +15,8 @@ namespace
 void trim(String & s)
 {
     s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) { return !std::isspace(ch); }).base(), s.end());
+    auto new_end = std::unique(s.begin(), s.end(), [](char lhs, char rhs) { return (lhs == rhs) && (lhs == ' '); });
+    s.erase(new_end, s.end());
 }
 
 }
@@ -109,6 +111,8 @@ ReadlineLineReader::ReadlineLineReader(
         throw std::runtime_error(std::string("Cannot set signal handler for readline: ") + strerror(errno));
 
     rl_variable_bind("completion-ignore-case", "on");
+    rl_variable_bind("horizontal-scroll-mode", "on");
+    rl_variable_bind("revert-all-at-newline", "on");
     // TODO: it doesn't work
     // history_write_timestamps = 1;
 }
@@ -148,6 +152,12 @@ void ReadlineLineReader::addToHistory(const String & line)
 #define BRACK_PASTE_LAST '~'
 #define BRACK_PASTE_SLEN 6
 
+enum class State {
+    ONE_DASH,
+    TWO_DASH,
+    NEW_LINE,
+};
+
 /// This handler bypasses some unused macro/event checkings and remove trailing newlines before insertion.
 static int clickhouse_rl_bracketed_paste_begin(int /* count */, int /* key */)
 {
@@ -157,14 +167,49 @@ static int clickhouse_rl_bracketed_paste_begin(int /* count */, int /* key */)
     RL_SETSTATE(RL_STATE_MOREINPUT);
     SCOPE_EXIT(RL_UNSETSTATE(RL_STATE_MOREINPUT));
     int c;
+    State state = State::NEW_LINE;
     while ((c = rl_read_key()) >= 0)
     {
-        if (c == '\r')
-            c = '\n';
-        buf.push_back(c);
-        if (buf.size() >= BRACK_PASTE_SLEN && c == BRACK_PASTE_LAST && buf.substr(buf.size() - BRACK_PASTE_SLEN) == BRACK_PASTE_SUFF)
+        switch (state)
         {
-            buf.resize(buf.size() - BRACK_PASTE_SLEN);
+        case State::ONE_DASH:
+            if (c == '-')
+                state = State::TWO_DASH;
+            else
+            {
+                buf.push_back('-');
+                if (c == '\r' || c == '\n')
+                    c = ' ';
+                buf.push_back(c);
+                state = State::NEW_LINE;
+            }
+            break;
+        case State::TWO_DASH:
+            do
+            {
+                if (c == '\r' || c == '\n')
+                {
+                    buf.push_back(' ');
+                    break;
+                }
+            } while ((c = rl_read_key()) >= 0);
+            state = State::NEW_LINE;
+            break;
+        case State::NEW_LINE:
+            if (c == '-')
+                state = State::ONE_DASH;
+            else
+            {
+                if (c == '\r' || c == '\n')
+                    c = ' ';
+                buf.push_back(c);
+                if (buf.size() >= BRACK_PASTE_SLEN && c == BRACK_PASTE_LAST && buf.substr(buf.size() - BRACK_PASTE_SLEN) == BRACK_PASTE_SUFF)
+                {
+                    buf.resize(buf.size() - BRACK_PASTE_SLEN);
+                    trim(buf);
+                    return static_cast<size_t>(rl_insert_text(buf.c_str())) == buf.size() ? 0 : 1;
+                }
+            }
             break;
         }
     }
