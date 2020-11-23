@@ -17,6 +17,8 @@
     <http_port>58144</http_port>
     <tcp_port>19001</tcp_port>
     <!-- <mysql_port>9001</mysql_port> -->
+    <remap_executable>1</remap_executable>
+    <mlock_executable>1</mlock_executable>
 
     <!-- For HTTPS and SSL over native protocol. -->
     <!--
@@ -24,42 +26,9 @@
     <tcp_ssl_port>9440</tcp_ssl_port>
     -->
 
-    <!-- Used with https_port and tcp_ssl_port. Full ssl options list: https://github.com/yandex/ClickHouse/blob/master/contrib/libpoco/NetSSL_OpenSSL/include/Poco/Net/SSLManager.h#L71 -->
-    <openSSL>
-        <server> <!-- Used for https server AND secure tcp port -->
-            <!-- openssl req -subj "/CN=localhost" -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout /etc/clickhouse-server/server.key -out /etc/clickhouse-server/server.crt -->
-            <certificateFile>/data/ClickHouse/src/dbms/tests/integration/test_mysql_protocol/configs/server.crt</certificateFile>
-            <privateKeyFile>/data/ClickHouse/src/dbms/tests/integration/test_mysql_protocol/configs/server.key</privateKeyFile>
-            <!-- openssl dhparam -out /etc/clickhouse-server/dhparam.pem 4096 -->
-            <dhParamsFile>/data/ClickHouse/src/dbms/tests/integration/test_mysql_protocol/configs/dhparam.pem</dhParamsFile>
-            <verificationMode>none</verificationMode>
-            <loadDefaultCAFile>true</loadDefaultCAFile>
-            <cacheSessions>true</cacheSessions>
-            <disableProtocols>sslv2,sslv3</disableProtocols>
-            <preferServerCiphers>true</preferServerCiphers>
-        </server>
-
-        <client> <!-- Used for connecting to https dictionary source -->
-            <loadDefaultCAFile>true</loadDefaultCAFile>
-            <cacheSessions>true</cacheSessions>
-            <disableProtocols>sslv2,sslv3</disableProtocols>
-            <preferServerCiphers>true</preferServerCiphers>
-            <!-- Use for self-signed: <verificationMode>none</verificationMode> -->
-            <invalidCertificateHandler>
-                <!-- Use for self-signed: <name>AcceptCertificateHandler</name> -->
-                <name>RejectCertificateHandler</name>
-            </invalidCertificateHandler>
-        </client>
-    </openSSL>
-
-    <!-- Default root page on http[s] server. For example load UI from https://tabix.io/ when opening http://localhost:8123 -->
-    <!--
-    <http_server_default_response><![CDATA[<html ng-app="SMI2"><head><base href="http://ui.tabix.io/"></head><body><div ui-view="" class="content-ui"></div><script src="http://loader.tabix.io/master.js"></script></body></html>]]></http_server_default_response>
-    -->
-
     <!-- Port for communication between replicas. Used for data exchange. -->
-    <interserver_http_port>9010</interserver_http_port>
-    <interserver_http_host>201.nobida.cn</interserver_http_host>
+    <interserver_http_port>19011</interserver_http_port>
+    <!-- <interserver_http_host>201.nobida.cn</interserver_http_host> -->
 
     <!-- Hostname that is used by other replicas to request this server.
          If not specified, than it is determined analoguous to 'hostname -f' command.

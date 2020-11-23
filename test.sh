@@ -71,13 +71,13 @@ tbs1)
     clickhouse benchmark --max_threads 1 --port 9001 <<< $@
     ;;
 tb)
-    clickhouse benchmark <<< $@
+    clickhouse benchmark --port 19000 <<< $@
     ;;
 tb1)
-    clickhouse benchmark --port 9001 <<< $@
+    clickhouse benchmark --port 19001 <<< $@
     ;;
 tb2)
-    clickhouse benchmark --port 9000 --port 9001 <<< $@
+    clickhouse benchmark --port 19000 --port 19001 <<< $@
     ;;
 *)
     echo "There is no test for this variant yet."

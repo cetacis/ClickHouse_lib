@@ -4,6 +4,30 @@
     <profiles>
         <!-- Default settings. -->
         <default>
+            <allow_introspection_functions>1</allow_introspection_functions>
+            <!-- 25 times per second sampling profiler -->
+            <query_profiler_real_time_period_ns>40000000</query_profiler_real_time_period_ns>
+            <query_profiler_cpu_time_period_ns>40000000</query_profiler_cpu_time_period_ns>
+
+            <!-- memory profiling for each query, dump stack trace when 1MiB allocation with query_id not empty
+            Whenever query memory usage becomes larger than every next step in number of bytes the memory profiler
+            will collect the allocating stack trace.
+            Zero means disabled memory profiler.
+            Values lower than a few megabytes will slow down query processing.
+            -->
+            <memory_profiler_step>1048576</memory_profiler_step>
+            <!-- Small allocations and deallocations are grouped in thread local variable and tracked or profiled only
+                when amount (in absolute value) becomes larger than specified value.
+                If the value is higher than 'memory_profiler_step' it will be effectively lowered to 'memory_profiler_step'.
+            -->
+            <max_untracked_memory>1048576</max_untracked_memory>
+            <!-- Collect random allocations and deallocations and write them into system.trace_log with 'MemorySample' trace_type.
+                 The probability is for every alloc/free regardless to the size of the allocation.
+                 Note that sampling happens only when the amount of untracked memory exceeds 'max_untracked_memory'.
+                 You may want to set 'max_untracked_memory' to 0 for extra fine grained sampling. -->
+            <memory_profiler_sample_probability>0.01</memory_profiler_sample_probability>
+
+
             <!-- Maximum memory usage for processing single query, in bytes. -->
             <max_memory_usage>100000000000</max_memory_usage>
 
@@ -29,6 +53,8 @@
     <users>
         <!-- If user name was not specified, 'default' user is used. -->
         <default>
+            <access_management>1</access_management>
+
             <!-- Password could be specified in plaintext or in SHA256 (in hex format).
 
                  If you want to specify password in plaintext (not recommended), place it in 'password' element.
@@ -92,16 +118,6 @@
                 </test>
             </databases>
         </default>
-
-        <!-- Example of user with readonly access. -->
-        <readonly>
-            <password></password>
-            <networks incl="networks" replace="replace">
-                <ip>10.60.1.142</ip>
-            </networks>
-            <profile>readonly</profile>
-            <quota>default</quota>
-        </readonly>
     </users>
 
     <!-- Quotas. -->

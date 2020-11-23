@@ -2,8 +2,8 @@
 <yandex>
     <logger>
         <level>trace</level>
-        <log>clickhouse-server.log</log>
-        <errorlog>clickhouse-server.err.log</errorlog>
+        <log>clickhouse-server2.log</log>
+        <errorlog>clickhouse-server2.err.log</errorlog>
         <size>1000M</size>
         <count>10</count>
     </logger>
@@ -32,12 +32,12 @@
     <user_files_path>/</user_files_path>
 
     <dns_cache_update_period>10000000</dns_cache_update_period>
-    <http_port>8123</http_port>
-    <tcp_port>9000</tcp_port>
+    <http_port>8223</http_port>
+    <tcp_port>9100</tcp_port>
     <!-- <mysql_port>59099</mysql_port> -->
 
     <!-- <https_port>8443</https_port> -->
-    <tcp_ssl_port>9440</tcp_ssl_port>
+    <tcp_ssl_port>9540</tcp_ssl_port>
     <!-- <remap_executable>1</remap_executable> -->
     <mlock_executable>1</mlock_executable>
     <!-- <max_server_memory_usage>10737418240</max_server_memory_usage> -->
@@ -76,7 +76,7 @@
     -->
 
     <!-- Port for communication between replicas. Used for data exchange. -->
-    <interserver_http_port>9009</interserver_http_port>
+    <interserver_http_port>9109</interserver_http_port>
     <interserver_http_host>dev20.corp.kuaishou.com</interserver_http_host>
 
     <!-- Hostname that is used by other replicas to request this server.
@@ -116,12 +116,12 @@
 
 
     <!-- Path to data directory, with trailing slash. -->
-    <path>data</path>
+    <path>data2</path>
 
     <!-- Path to temporary data for processing hard queries. -->
-    <tmp_path>data/tmp/</tmp_path>
+    <tmp_path>data2/tmp/</tmp_path>
 
-    <access_control_path>data/acl/</access_control_path>
+    <access_control_path>data2/acl/</access_control_path>
 
     <custom_settings_prefixes>custom,amos</custom_settings_prefixes>
 
@@ -161,8 +161,8 @@ Example: W-SU is an alias for Europe/Moscow and Zulu is an alias for UTC.
         <local>
             <shard>
                 <replica>
-                    <host>localhost</host>
-                    <port>9100</port>
+                    <host>local2</host>
+                    <port>9000</port>
                 </replica>
             </shard>
         </local>

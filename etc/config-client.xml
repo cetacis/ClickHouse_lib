@@ -1,3 +1,7 @@
 <config>
-  <input_format_skip_unknown_fields>1</input_format_skip_unknown_fields>
+  <query_id_formats>
+    <speedscope>
+http://dev20.corp.kuaishou.com:29998/#profileURL=qp%3Fid%3D{query_id}
+    </speedscope>
+  </query_id_formats>
 </config>
