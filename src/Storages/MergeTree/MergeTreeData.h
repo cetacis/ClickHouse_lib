@@ -41,6 +41,16 @@ class MutationCommands;
 class Context;
 struct JobAndPool;
 
+/// Auxiliary struct holding information about the future merged or mutated part.
+struct EmergingPartInfo
+{
+    String disk_name;
+    String partition_id;
+    size_t estimate_bytes;
+};
+
+struct CurrentlySubmergingEmergingTagger;
+
 class ExpressionActions;
 using ExpressionActionsPtr = std::shared_ptr<ExpressionActions>;
 using ManyExpressionActions = std::vector<ExpressionActionsPtr>;
@@ -647,7 +657,8 @@ public:
         const IMergeTreeDataPart::TTLInfos & ttl_infos,
         time_t time_of_move,
         size_t min_volume_index = 0,
-        bool is_insert = false) const;
+        bool is_insert = false,
+        DiskPtr selected_disk = nullptr) const;
 
     ReservationPtr tryReserveSpacePreferringTTLRules(
         const StorageMetadataPtr & metadata_snapshot,
@@ -655,7 +666,19 @@ public:
         const IMergeTreeDataPart::TTLInfos & ttl_infos,
         time_t time_of_move,
         size_t min_volume_index = 0,
-        bool is_insert = false) const;
+        bool is_insert = false,
+        DiskPtr selected_disk = nullptr) const;
+
+    ReservationPtr balancedReservation(
+        const StorageMetadataPtr & metadata_snapshot,
+        size_t part_size,
+        size_t max_volume_index,
+        const String & part_name,
+        const MergeTreePartInfo & part_info,
+        MergeTreeData::DataPartsVector covered_parts,
+        std::optional<CurrentlySubmergingEmergingTagger> * tagger_ptr,
+        const IMergeTreeDataPart::TTLInfos * ttl_infos,
+        bool is_insert = false);
 
     /// Choose disk with max available free space
     /// Reserves 0 bytes
@@ -731,6 +754,14 @@ public:
     /// Return job to move parts between disks/volumes and so on.
     std::optional<JobAndPool> getDataMovingJob();
     bool areBackgroundMovesNeeded() const;
+
+    /// Parts that currently submerging (merging to bigger parts) or emerging
+    /// (to be appeared after merging finished). This set have to be used
+    /// with `currently_submerging_emerging_mutex`.
+    DataParts currently_submerging_parts;
+    std::map<String, EmergingPartInfo> currently_emerging_parts;
+    /// Mutex for currently_submerging_parts and currently_emerging_parts
+    mutable std::mutex currently_submerging_emerging_mutex;
 
 protected:
 
@@ -964,6 +995,24 @@ private:
     // Record all query ids which access the table. It's guarded by `query_id_set_mutex` and is always mutable.
     mutable std::set<String> query_id_set;
     mutable std::mutex query_id_set_mutex;
+};
+
+/// RAII struct to record big parts that are submerging or emerging.
+/// It's used to calculate the balanced statistics of JBOD array.
+struct CurrentlySubmergingEmergingTagger
+{
+    MergeTreeData & storage;
+    String name;
+    MergeTreeData::DataPartsVector parts;
+    Poco::Logger * log;
+
+    CurrentlySubmergingEmergingTagger(
+        MergeTreeData & storage_, const String & name_, MergeTreeData::DataPartsVector && parts_, Poco::Logger * log_)
+        : storage(storage_), name(name_), parts(std::move(parts_)), log(log_)
+    {
+    }
+
+    ~CurrentlySubmergingEmergingTagger();
 };
 
 }
