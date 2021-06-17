@@ -5,6 +5,20 @@
 
 namespace DB
 {
+
+/// TODO what's the priority here
+/// Consider this
+///   WITH
+///       a as (select 1),
+///       b as (select 2),
+///       c as (select 3)
+///   SELECT
+///       *
+///   FROM
+///       (select 4) as d
+///
+/// Should we propagate a,b,c into d, or should we put d into a,b,c
+/// We don't have recursive CTE support
 void ApplyWithAliasVisitor::visit(ASTPtr & ast, const Data & data)
 {
     if (auto * node_select = ast->as<ASTSelectQuery>())
