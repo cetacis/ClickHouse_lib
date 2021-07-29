@@ -509,7 +509,7 @@ void AggregatingTransform::consume(Chunk chunk)
 {
     const UInt64 num_rows = chunk.getNumRows();
 
-    if (num_rows == 0 && params->params.empty_result_for_aggregation_by_empty_set)
+    if (num_rows == 0 && params->params.empty_result_for_aggregation_by_empty_set == 1)
         return;
 
     if (!is_consume_started)
@@ -544,7 +544,9 @@ void AggregatingTransform::initGenerate()
 
     /// If there was no data, and we aggregate without keys, and we must return single row with the result of empty aggregation.
     /// To do this, we pass a block with zero rows to aggregate.
-    if (variants.empty() && params->params.keys_size == 0 && !params->params.empty_result_for_aggregation_by_empty_set)
+    if (variants.empty()
+        && ((params->params.keys_size == 0 && params->params.empty_result_for_aggregation_by_empty_set == 0)
+            || (params->params.empty_result_for_aggregation_by_empty_set == 2)))
     {
         if (params->only_merge)
             params->aggregator.mergeBlock(getInputs().front().getHeader(), variants, no_more_keys);

@@ -901,8 +901,9 @@ public:
         /// Settings to flush temporary data to the filesystem (external aggregation).
         const size_t max_bytes_before_external_group_by;        /// 0 - do not use external aggregation.
 
-        /// Return empty result when aggregating without keys on empty set.
-        bool empty_result_for_aggregation_by_empty_set;
+        /// 1: Return empty result when aggregating without keys on empty set.
+        /// 2: Return empty result when aggregating on empty set.
+        UInt64 empty_result_for_aggregation_by_empty_set;
 
         VolumePtr tmp_volume;
 
@@ -920,7 +921,7 @@ public:
             bool overflow_row_, size_t max_rows_to_group_by_, OverflowMode group_by_overflow_mode_,
             size_t group_by_two_level_threshold_, size_t group_by_two_level_threshold_bytes_,
             size_t max_bytes_before_external_group_by_,
-            bool empty_result_for_aggregation_by_empty_set_,
+            UInt64 empty_result_for_aggregation_by_empty_set_,
             VolumePtr tmp_volume_, size_t max_threads_,
             size_t min_free_disk_space_,
             bool compile_aggregate_expressions_,
@@ -929,7 +930,8 @@ public:
             : src_header(src_header_),
             intermediate_header(intermediate_header_),
             keys(keys_), aggregates(aggregates_), keys_size(keys.size()), aggregates_size(aggregates.size()),
-            overflow_row(overflow_row_), max_rows_to_group_by(max_rows_to_group_by_), group_by_overflow_mode(group_by_overflow_mode_),
+            overflow_row(empty_result_for_aggregation_by_empty_set_ == 2 ? true: overflow_row_),
+            max_rows_to_group_by(max_rows_to_group_by_), group_by_overflow_mode(group_by_overflow_mode_),
             group_by_two_level_threshold(group_by_two_level_threshold_), group_by_two_level_threshold_bytes(group_by_two_level_threshold_bytes_),
             max_bytes_before_external_group_by(max_bytes_before_external_group_by_),
             empty_result_for_aggregation_by_empty_set(empty_result_for_aggregation_by_empty_set_),
