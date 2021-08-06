@@ -59,10 +59,10 @@ ts)
     ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests && ./clickhouse-test --no-stateless --shard --zookeeper "$@" )
     ;;
 tp)
-    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests/performance && clickhouse-performance-test --port 19000 --input-files "$@" )
+    (cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests/performance && ../../docker/test/performance-comparison/perf.py --host=localhost --port=9000 --runs=1 "$@")
     ;;
 tp1)
-    ( cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests/performance && clickhouse-performance-test --port 9001 --input-files "$@" )
+    (cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/src/tests/performance && ../../docker/test/performance-comparison/perf.py --host=localhost --port=9001 --runs=1 "$@")
     ;;
 tbs)
     clickhouse benchmark --max_threads 1 <<< $@
