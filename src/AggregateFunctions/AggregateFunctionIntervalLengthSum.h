@@ -68,7 +68,7 @@ struct AggregateFunctionIntervalLengthSumData
         /// either sort whole container or do so partially merging ranges afterwards
         if (!sorted && !other.sorted)
         {
-            ::sort(std::begin(segments), std::end(segments));
+            sort();
         }
         else
         {
@@ -83,9 +83,35 @@ struct AggregateFunctionIntervalLengthSumData
                 ::sort(middle, end);
 
             std::inplace_merge(begin, middle, end);
+            collapse();
         }
 
         sorted = true;
+    }
+
+    void collapse()
+    {
+        if (segments.size() > 1)
+        {
+            auto * curr_segment = &segments[0];
+            auto * next_segment = &segments[1];
+            auto * last_segment = &segments.back();
+            while (next_segment <= last_segment)
+            {
+                if (curr_segment->second < next_segment->first)
+                {
+                    ++curr_segment;
+                    if (curr_segment != next_segment)
+                        *curr_segment = *next_segment;
+                }
+                else if (curr_segment->second < next_segment->second)
+                    curr_segment->second = next_segment->second;
+
+                ++next_segment;
+            }
+
+            segments.resize(curr_segment - &segments[0] + 1);
+        }
     }
 
     void sort()
@@ -94,6 +120,7 @@ struct AggregateFunctionIntervalLengthSumData
             return;
 
         ::sort(std::begin(segments), std::end(segments));
+        collapse();
         sorted = true;
     }
 
@@ -116,8 +143,8 @@ struct AggregateFunctionIntervalLengthSumData
         size_t size;
         readBinary(size, buf);
 
-        if (unlikely(size > MAX_ARRAY_SIZE))
-            throw Exception("Too large array size", ErrorCodes::TOO_LARGE_ARRAY_SIZE);
+        // if (unlikely(size > MAX_ARRAY_SIZE))
+        //     throw Exception("Too large array size", ErrorCodes::TOO_LARGE_ARRAY_SIZE);
 
         segments.clear();
         segments.reserve(size);
@@ -129,6 +156,7 @@ struct AggregateFunctionIntervalLengthSumData
             readBinary(segment.second, buf);
             segments.emplace_back(segment);
         }
+        sort();
     }
 };
 
@@ -136,11 +164,6 @@ template <typename T, typename Data>
 class AggregateFunctionIntervalLengthSum final : public IAggregateFunctionDataHelper<Data, AggregateFunctionIntervalLengthSum<T, Data>>
 {
 private:
-    static auto NO_SANITIZE_UNDEFINED length(typename Data::Segment segment)
-    {
-        return segment.second - segment.first;
-    }
-
     template <typename TResult>
     TResult getIntervalLengthSum(Data & data) const
     {
@@ -148,33 +171,14 @@ private:
             return 0;
 
         data.sort();
-
         TResult res = 0;
-
-        typename Data::Segment curr_segment = data.segments[0];
-
-        for (size_t i = 1, size = data.segments.size(); i < size; ++i)
-        {
-            const typename Data::Segment & next_segment = data.segments[i];
-
-            /// Check if current interval intersects with next one then add length, otherwise advance interval end.
-            if (curr_segment.second < next_segment.first)
-            {
-                res += length(curr_segment);
-                curr_segment = next_segment;
-            }
-            else if (next_segment.second > curr_segment.second)
-            {
-                curr_segment.second = next_segment.second;
-            }
-        }
-        res += length(curr_segment);
-
+        for (const auto & elem : data.segments)
+            res += elem.second - elem.first;
         return res;
     }
 
 public:
-    String getName() const override { return "intervalLengthSum"; }
+    String getName() const override { return "segmentLengthSum"; }
 
     explicit AggregateFunctionIntervalLengthSum(const DataTypes & arguments)
         : IAggregateFunctionDataHelper<Data, AggregateFunctionIntervalLengthSum<T, Data>>(arguments, {})

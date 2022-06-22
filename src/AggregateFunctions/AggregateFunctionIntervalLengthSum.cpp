@@ -60,7 +60,7 @@ namespace
 
 void registerAggregateFunctionIntervalLengthSum(AggregateFunctionFactory & factory)
 {
-    factory.registerFunction("intervalLengthSum", createAggregateFunctionIntervalLengthSum<AggregateFunctionIntervalLengthSumData>);
+    factory.registerFunction("segmentLengthSum", createAggregateFunctionIntervalLengthSum<AggregateFunctionIntervalLengthSumData>);
 }
 
 }
