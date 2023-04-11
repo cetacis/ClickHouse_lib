@@ -497,6 +497,13 @@ See https://clickhouse.yandex/reference_en.html#Creating%20replicated%20tables
         <engine>ENGINE MergeTree PARTITION BY toYYYYMM(event_date) ORDER BY (event_date, event_time) TTL event_date + INTERVAL 6 MONTH DELETE SETTINGS min_bytes_for_wide_part = '10M'</engine>
         <flush_interval_milliseconds>7500</flush_interval_milliseconds>
     </trace_log>
+    <processors_profile_log>
+        <database>system</database>
+        <table>processors_profile_log</table>
+
+        <partition_by>toYYYYMM(event_date)</partition_by>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+    </processors_profile_log>
     <!-- <part_log> -->
     <!--     <database>system</database> -->
     <!--     <table>part_log</table> -->

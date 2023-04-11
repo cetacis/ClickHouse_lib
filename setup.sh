@@ -2,6 +2,6 @@
 
 set -e
 
-git worktree add src master
+git worktree add src upstream/master
 cd src
 HOME=$PWD git submodule update --init --recursive
