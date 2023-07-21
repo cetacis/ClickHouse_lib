@@ -20,30 +20,13 @@ export PATH=${APUS_TOOLCHAIN_PATH}/bin:$PATH
 export ASAN_OPTIONS=detect_leaks=0
 
 case "$type" in
-ds)
+d)
     configure() {
         cmake \
            -DCMAKE_BUILD_TYPE=Debug \
            -DENABLE_TESTS=0 \
            -DENABLE_UTILS=0 \
            -DENABLE_CLICKHOUSE_ALL=0 \
-           -DENABLE_CLICKHOUSE_SERVER=1 \
-           -DENABLE_CLICKHOUSE_CLIENT=1 \
-           -DENABLE_CLICKHOUSE_LOCAL=1 \
-           -DENABLE_CLICKHOUSE_BENCHMARK=1 \
-           ../src
-    }
-    ;;
-d)
-    configure() {
-        cmake \
-           -DUSE_STATIC_LIBRARIES=0 \
-           -DSPLIT_SHARED_LIBRARIES=1 \
-           -DCMAKE_BUILD_TYPE=Debug \
-           -DENABLE_TESTS=1 \
-           -DENABLE_UTILS=1 \
-           -DENABLE_CLICKHOUSE_ALL=0 \
-           -DENABLE_CLICKHOUSE_INSTALL=1 \
            -DENABLE_CLICKHOUSE_SERVER=1 \
            -DENABLE_CLICKHOUSE_CLIENT=1 \
            -DENABLE_CLICKHOUSE_LOCAL=1 \
@@ -60,7 +43,6 @@ a)
            -DENABLE_TESTS=0 \
            -DENABLE_UTILS=0 \
            -DENABLE_CLICKHOUSE_ALL=0 \
-           -DENABLE_CLICKHOUSE_INSTALL=1 \
            -DENABLE_CLICKHOUSE_SERVER=1 \
            -DENABLE_CLICKHOUSE_CLIENT=1 \
            -DENABLE_CLICKHOUSE_LOCAL=1 \
@@ -82,24 +64,8 @@ r)
            ../src
     }
     ;;
-rs)
-    configure() {
-        cmake \
-           -DUSE_STATIC_LIBRARIES=0 \
-           -DSPLIT_SHARED_LIBRARIES=1 \
-           -DENABLE_THINLTO=0 \
-           -DENABLE_TESTS=0 \
-           -DENABLE_UTILS=0 \
-           -DENABLE_CLICKHOUSE_ALL=0 \
-           -DENABLE_CLICKHOUSE_SERVER=1 \
-           -DENABLE_CLICKHOUSE_CLIENT=1 \
-           -DENABLE_CLICKHOUSE_LOCAL=1 \
-           -DENABLE_CLICKHOUSE_BENCHMARK=1 \
-           ../src
-    }
-    ;;
 *)
-    echo "Usage: $0 [d|ds|r|rs]"
+    echo "Usage: $0 [d|r|a]"
     exit 1
     ;;
 esac
