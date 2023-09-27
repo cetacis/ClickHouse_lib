@@ -120,8 +120,11 @@ static ReturnType addElementSafe(size_t num_elems, IColumn & column, F && impl)
             throw;
         return ReturnType(false);
     }
+<<<<<<< HEAD
 
     return ReturnType(true);
+=======
+>>>>>>> ea8742a70c1 (Address reviews)
 }
 
 void SerializationTuple::deserializeBinary(IColumn & column, ReadBuffer & istr, const FormatSettings & settings) const
