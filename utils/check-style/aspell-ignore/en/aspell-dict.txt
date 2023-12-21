@@ -1839,6 +1839,7 @@ mdadm
 meanZTest
 meanztest
 mebibytes
+mergeTreeIndex
 mergeable
 mergetree
 messageID
@@ -1848,14 +1849,14 @@ metrica
 metroHash
 mfedotov
 minMap
+minSampleSizeContinuous
+minSampleSizeConversion
 mindsdb
 minimalistic
 mininum
 miniselect
 minmap
 minmax
-minSampleSizeContinuous
-minSampleSizeConversion
 mins
 misconfiguration
 mispredictions
@@ -2353,6 +2354,7 @@ subranges
 subreddits
 subseconds
 subsequence
+substreams
 substring
 substringIndex
 substringIndexUTF
