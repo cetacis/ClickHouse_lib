@@ -497,18 +497,6 @@ static const ActionsDAG::Node * splitFilterNodeForAllowedInputs(
             if (node_copy.children.empty())
                 return nullptr;
 
-            if (node_copy.children.size() == 1)
-            {
-                const ActionsDAG::Node * res = node_copy.children.front();
-                /// Expression like (not_allowed AND 256) can't be resuced to (and(256)) because AND requires
-                /// at least two arguments; also it can't be reduced to (256) because result type is different.
-                /// TODO: add CAST here
-                if (!res->result_type->equals(*node->result_type))
-                    return nullptr;
-
-                return res;
-            }
-
             return &node_copy;
         }
         else if (node->function_base->getName() == "or")
@@ -539,6 +527,41 @@ ActionsDAGPtr splitFilterDagForAllowedInputs(const ActionsDAG::Node * predicate,
         return nullptr;
 
     return ActionsDAG::cloneSubDAG({res}, true);
+}
+
+ActionsDAGPtr splitQueryPredicateForAllowedInputs(const ASTPtr & query, const Block & allowed_inputs, ContextPtr context)
+{
+    const auto & select = query->as<ASTSelectQuery &>();
+    ASTPtr predicate;
+    if (select.where() && select.prewhere())
+        predicate = makeASTFunction("and", select.where(), select.prewhere());
+    else if (select.where())
+        predicate = select.where();
+    else if (select.prewhere())
+        predicate = select.prewhere();
+    else
+        return nullptr;
+
+    auto actions = std::make_shared<ActionsDAG>();
+    PreparedSetsPtr prepared_sets = std::make_shared<PreparedSets>();
+    const NamesAndTypesList source_columns;
+    const NamesAndTypesList aggregation_keys;
+    const ColumnNumbersList grouping_set_keys;
+
+    ActionsVisitor::Data visitor_data(
+        context,
+        SizeLimits{},
+        1,
+        source_columns,
+        std::move(actions),
+        prepared_sets,
+        true,
+        true,
+        true,
+        {aggregation_keys, grouping_set_keys, GroupByKind::NONE});
+
+    ActionsVisitor(visitor_data).visit(predicate);
+    return splitFilterDagForAllowedInputs(visitor_data.getActions()->getOutputs().at(0), allowed_inputs);
 }
 
 void filterBlockWithPredicate(const ActionsDAG::Node * predicate, Block & block, ContextPtr context)

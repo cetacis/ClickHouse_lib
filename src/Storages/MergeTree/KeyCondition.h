@@ -65,11 +65,10 @@ public:
 
     /// Construct key condition from ActionsDAG nodes
     KeyCondition(
-        ActionsDAGPtr filter_dag,
+        const ActionsDAG::Node * filter_node,
         ContextPtr context,
         const Names & key_column_names,
         const ExpressionActionsPtr & key_expr,
-        NameSet array_joined_column_names,
         bool single_point_ = false,
         bool strict_ = false);
 

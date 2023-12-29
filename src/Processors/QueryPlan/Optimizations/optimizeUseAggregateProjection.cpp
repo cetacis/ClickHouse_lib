@@ -436,8 +436,6 @@ AggregateProjectionCandidates getAggregateProjectionCandidates(
     AggregateProjectionCandidates candidates;
 
     const auto & parts = reading.getParts();
-    const auto & query_info = reading.getQueryInfo();
-
     const auto metadata = reading.getStorageMetadata();
     ContextPtr context = reading.getContext();
 
@@ -481,8 +479,7 @@ AggregateProjectionCandidates getAggregateProjectionCandidates(
             auto block = reading.getMergeTreeData().getMinMaxCountProjectionBlock(
                 metadata,
                 candidate.dag->getRequiredColumnsNames(),
-                dag.filter_node != nullptr,
-                query_info,
+                dag.filter_node,
                 parts,
                 max_added_blocks.get(),
                 context);

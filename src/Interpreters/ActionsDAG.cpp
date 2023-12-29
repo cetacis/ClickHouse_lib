@@ -2680,6 +2680,19 @@ ActionsDAG::NodeRawConstPtrs ActionsDAG::filterNodesByAllowedInputs(
     return nodes;
 }
 
+const ActionsDAG::Node * ActionsDAG::getFirstNode(ActionsDAGPtr filter_dag)
+{
+    if (!filter_dag)
+        return nullptr;
+
+    auto & outputs = filter_dag->getOutputs();
+
+    if (outputs.empty())
+        return nullptr;
+
+    return outputs[0];
+}
+
 FindOriginalNodeForOutputName::FindOriginalNodeForOutputName(const ActionsDAGPtr & actions_)
     :actions(actions_)
 {

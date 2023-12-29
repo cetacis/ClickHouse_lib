@@ -401,8 +401,7 @@ public:
     Block getMinMaxCountProjectionBlock(
         const StorageMetadataPtr & metadata_snapshot,
         const Names & required_columns,
-        bool has_filter,
-        const SelectQueryInfo & query_info,
+        const ActionsDAG::Node * filter_node,
         const DataPartsVector & parts,
         const PartitionIdToMaxBlock * max_block_numbers_to_read,
         ContextPtr query_context) const;

@@ -93,6 +93,7 @@
 #include <Common/scope_guard_safe.h>
 #include <Common/typeid_cast.h>
 #include <Common/ProfileEvents.h>
+#include <Common/logger_useful.h>
 
 
 namespace ProfileEvents

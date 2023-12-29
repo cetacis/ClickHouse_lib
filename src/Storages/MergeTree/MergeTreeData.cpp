@@ -93,16 +93,12 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cmath>
 #include <chrono>
-#include <iomanip>
 #include <limits>
 #include <optional>
 #include <ranges>
 #include <set>
 #include <thread>
-#include <typeinfo>
-#include <typeindex>
 #include <unordered_set>
 #include <filesystem>
 
@@ -1040,21 +1036,20 @@ std::optional<UInt64> MergeTreeData::totalRowsByPartitionPredicateImpl(
     if (parts.empty())
         return 0u;
     auto metadata_snapshot = getInMemoryMetadataPtr();
-    ASTPtr expression_ast;
     Block virtual_columns_block = getBlockWithVirtualPartColumns(parts, true /* one_part */);
 
     // Generate valid expressions for filtering
-    bool valid = VirtualColumnUtils::prepareFilterBlockWithQuery(query_info.query, local_context, virtual_columns_block, expression_ast);
+    auto dag = VirtualColumnUtils::splitQueryPredicateForAllowedInputs(query_info.query, virtual_columns_block, local_context);
 
     PartitionPruner partition_pruner(metadata_snapshot, query_info, local_context, true /* strict */);
-    if (partition_pruner.isUseless() && !valid)
+    if (partition_pruner.isUseless() && !dag)
         return {};
 
     std::unordered_set<String> part_values;
-    if (valid && expression_ast)
+    if (dag)
     {
         virtual_columns_block = getBlockWithVirtualPartColumns(parts, false /* one_part */);
-        VirtualColumnUtils::filterBlockWithQuery(query_info.query, virtual_columns_block, local_context, expression_ast);
+        VirtualColumnUtils::filterBlockWithDAG(dag, virtual_columns_block, local_context);
         part_values = VirtualColumnUtils::extractSingleValueFromBlock<String>(virtual_columns_block, "_part");
         if (part_values.empty())
             return 0;
@@ -6602,8 +6597,7 @@ using PartitionIdToMaxBlock = std::unordered_map<String, Int64>;
 Block MergeTreeData::getMinMaxCountProjectionBlock(
     const StorageMetadataPtr & metadata_snapshot,
     const Names & required_columns,
-    bool has_filter,
-    const SelectQueryInfo & query_info,
+    const ActionsDAG::Node * filter_node,
     const DataPartsVector & parts,
     const PartitionIdToMaxBlock * max_block_numbers_to_read,
     ContextPtr query_context) const
@@ -6652,8 +6646,9 @@ Block MergeTreeData::getMinMaxCountProjectionBlock(
 
     Block virtual_columns_block;
     auto virtual_block = getSampleBlockWithVirtualColumns();
-    bool has_virtual_column = std::any_of(required_columns.begin(), required_columns.end(), [&](const auto & name) { return virtual_block.has(name); });
-    if (has_virtual_column || has_filter)
+    bool has_virtual_column
+        = std::any_of(required_columns.begin(), required_columns.end(), [&](const auto & name) { return virtual_block.has(name); });
+    if (has_virtual_column || filter_node)
     {
         virtual_columns_block = getBlockWithVirtualPartColumns(parts, false /* one_part */, true /* ignore_empty */);
         if (virtual_columns_block.rows() == 0)
@@ -6665,26 +6660,23 @@ Block MergeTreeData::getMinMaxCountProjectionBlock(
     std::optional<PartitionPruner> partition_pruner;
     std::optional<KeyCondition> minmax_idx_condition;
     DataTypes minmax_columns_types;
-    if (has_filter)
+    if (filter_node)
     {
         if (metadata_snapshot->hasPartitionKey())
         {
             const auto & partition_key = metadata_snapshot->getPartitionKey();
             auto minmax_columns_names = getMinMaxColumnsNames(partition_key);
             minmax_columns_types = getMinMaxColumnsTypes(partition_key);
-
             minmax_idx_condition.emplace(
-                query_info, query_context, minmax_columns_names,
+                filter_node,
+                query_context,
+                minmax_columns_names,
                 getMinMaxExpr(partition_key, ExpressionActionsSettings::fromContext(query_context)));
-            partition_pruner.emplace(metadata_snapshot, query_info, query_context, false /* strict */);
+
+            partition_pruner.emplace(metadata_snapshot, filter_node, query_context, false /* strict */);
         }
 
-        // Generate valid expressions for filtering
-        ASTPtr expression_ast;
-        VirtualColumnUtils::prepareFilterBlockWithQuery(query_info.query, query_context, virtual_columns_block, expression_ast);
-        if (expression_ast)
-            VirtualColumnUtils::filterBlockWithQuery(query_info.query, virtual_columns_block, query_context, expression_ast);
-
+        VirtualColumnUtils::filterBlockWithPredicate(filter_node, virtual_columns_block, query_context);
         rows = virtual_columns_block.rows();
         part_name_column = virtual_columns_block.getByName("_part").column;
     }

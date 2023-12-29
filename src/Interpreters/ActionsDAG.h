@@ -402,6 +402,9 @@ public:
         NodeRawConstPtrs nodes,
         const std::unordered_set<const Node *> & allowed_inputs);
 
+    /// Get first output node of given dag if available. Otherwise return nullptr.
+    static const ActionsDAG::Node * getFirstNode(ActionsDAGPtr filter_dag);
+
 private:
     NodeRawConstPtrs getParents(const Node * target) const;
 

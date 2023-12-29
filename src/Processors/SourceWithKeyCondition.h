@@ -38,11 +38,10 @@ protected:
 
             auto filter_actions_dag = ActionsDAG::buildFilterActionsDAG(nodes, node_name_to_input_column, context);
             key_condition = std::make_shared<const KeyCondition>(
-                filter_actions_dag,
+                ActionsDAG::getFirstNode(filter_actions_dag),
                 context,
                 keys.getNames(),
-                std::make_shared<ExpressionActions>(std::make_shared<ActionsDAG>(keys.getColumnsWithTypeAndName())),
-                NameSet{});
+                std::make_shared<ExpressionActions>(std::make_shared<ActionsDAG>(keys.getColumnsWithTypeAndName())));
         }
     }
 

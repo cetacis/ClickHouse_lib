@@ -848,16 +848,14 @@ KeyCondition::KeyCondition(
 }
 
 KeyCondition::KeyCondition(
-    ActionsDAGPtr filter_dag,
+    const ActionsDAG::Node * filter_node,
     ContextPtr context,
     const Names & key_column_names,
     const ExpressionActionsPtr & key_expr_,
-    NameSet array_joined_column_names_,
     bool single_point_,
     bool strict_)
     : key_expr(key_expr_)
     , key_subexpr_names(getAllSubexpressionNames(*key_expr))
-    , array_joined_column_names(std::move(array_joined_column_names_))
     , single_point(single_point_)
     , strict(strict_)
 {
@@ -875,7 +873,7 @@ KeyCondition::KeyCondition(
     if (context->getSettingsRef().analyze_index_with_space_filling_curves)
         getAllSpaceFillingCurves();
 
-    if (!filter_dag)
+    if (!filter_node)
     {
         has_filter = false;
         rpn.emplace_back(RPNElement::FUNCTION_UNKNOWN);
@@ -884,7 +882,7 @@ KeyCondition::KeyCondition(
 
     has_filter = true;
 
-    auto inverted_dag = cloneASTWithInversionPushDown({filter_dag->getOutputs().at(0)}, context);
+    auto inverted_dag = cloneASTWithInversionPushDown({filter_node}, context);
     assert(inverted_dag->getOutputs().size() == 1);
 
     const auto * inverted_dag_filter_node = inverted_dag->getOutputs()[0];
