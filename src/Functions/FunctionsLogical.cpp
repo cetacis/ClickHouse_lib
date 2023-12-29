@@ -512,9 +512,9 @@ ColumnPtr basicExecuteImpl(ColumnRawPtrs arguments, size_t input_rows_count)
 template <typename Impl, typename Name>
 DataTypePtr FunctionAnyArityLogical<Impl, Name>::getReturnTypeImpl(const DataTypes & arguments) const
 {
-    if (arguments.size() < 2)
+    if (arguments.empty())
         throw Exception(ErrorCodes::TOO_FEW_ARGUMENTS_FOR_FUNCTION,
-                    "Number of arguments for function \"{}\" should be at least 2: passed {}",
+                    "Number of arguments for function \"{}\" should be at least 1: passed {}",
                     getName(), arguments.size());
 
     bool has_nullable_arguments = false;
