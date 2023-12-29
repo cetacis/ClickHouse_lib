@@ -76,41 +76,35 @@ bool extractFunctions(const ASTPtr & expression, const std::function<bool(const 
     {
         if (function->name == "and" || function->name == "indexHint")
         {
-            bool ret = true;
+            bool unmodified = true;
+            ASTs and_args;
             for (const auto & child : function->arguments->children)
-                ret &= extractFunctions(child, is_constant, result);
-            return ret;
+                unmodified &= extractFunctions(child, is_constant, and_args);
+
+            if (and_args.size() == 1)
+                result.push_back(std::move(and_args[0]));
+            else if (and_args.size() > 1)
+                result.push_back(makeASTForLogicalAnd(std::move(and_args)));
+
+            return unmodified;
         }
         else if (function->name == "or")
         {
-            bool ret = false;
+            bool unmodified = true;
             ASTs or_args;
             for (const auto & child : function->arguments->children)
-                ret |= extractFunctions(child, is_constant, or_args);
+                unmodified &= extractFunctions(child, is_constant, or_args);
 
-            if (!or_args.empty())
+            /// If some child has unknown input column, we cannot use this OR expression to filter.
+            if (or_args.size() == function->arguments->children.size())
             {
-                /// In case of there are less number of arguments for which
-                /// is_constant() == true, we need to add always-true
-                /// implicitly to avoid breaking AND invariant.
-                ///
-                /// Consider the following:
-                ///
-                ///     ((value = 10) OR (_table = 'v2')) AND ((_table = 'v1') OR (value = 20))
-                ///
-                /// Without implicit always-true:
-                ///
-                ///     (_table = 'v2') AND (_table = 'v1')
-                ///
-                /// With:
-                ///
-                ///     (_table = 'v2' OR 1) AND (_table = 'v1' OR 1) -> (_table = 'v2') OR (_table = 'v1')
-                ///
-                if (or_args.size() != function->arguments->children.size())
-                    or_args.push_back(std::make_shared<ASTLiteral>(Field(1)));
-                result.push_back(makeASTForLogicalOr(std::move(or_args)));
+                if (or_args.size() == 1)
+                    result.push_back(std::move(or_args[0]));
+                else if (or_args.size() > 1)
+                    result.push_back(makeASTForLogicalOr(std::move(or_args)));
             }
-            return ret;
+
+            return unmodified;
         }
     }
 
@@ -186,10 +180,8 @@ bool prepareFilterBlockWithQuery(const ASTPtr & query, ContextPtr context, Block
     if (!select.where() && !select.prewhere())
         return unmodified;
 
-    // Provide input columns as constant columns to check if an expression is
-    // constant and depends on the columns from provided block (the last is
-    // required to allow skipping some conditions for handling OR).
-    std::function<bool(const ASTPtr &)> is_constant = [&block, &context](const ASTPtr & expr)
+    // Provide input columns as constant columns to check if an expression is constant.
+    std::function<bool(const ASTPtr &)> is_constant = [&block, &context](const ASTPtr & node)
     {
         auto actions = std::make_shared<ActionsDAG>(block.getColumnsWithTypeAndName());
         PreparedSetsPtr prepared_sets = std::make_shared<PreparedSets>();
@@ -201,26 +193,13 @@ bool prepareFilterBlockWithQuery(const ASTPtr & query, ContextPtr context, Block
             context, SizeLimits{}, 1, source_columns, std::move(actions), prepared_sets, true, true, true,
             { aggregation_keys, grouping_set_keys, GroupByKind::NONE });
 
-        ActionsVisitor(visitor_data).visit(expr);
+        ActionsVisitor(visitor_data).visit(node);
         actions = visitor_data.getActions();
-        auto expr_column_name = expr->getColumnName();
-
-        const auto * expr_const_node = actions->tryFindInOutputs(expr_column_name);
-        if (!expr_const_node)
-            return false;
-        auto filter_actions = ActionsDAG::buildFilterActionsDAG({expr_const_node}, {}, context);
-        const auto & nodes = filter_actions->getNodes();
-        bool has_dependent_columns = std::any_of(nodes.begin(), nodes.end(), [&](const auto & node)
-        {
-            return block.has(node.result_name);
-        });
-        if (!has_dependent_columns)
-            return false;
-
         auto expression_actions = std::make_shared<ExpressionActions>(actions);
         auto block_with_constants = block;
         expression_actions->execute(block_with_constants);
-        return block_with_constants.has(expr_column_name) && isColumnConst(*block_with_constants.getByName(expr_column_name).column);
+        auto column_name = node->getColumnName();
+        return block_with_constants.has(column_name) && isColumnConst(*block_with_constants.getByName(column_name).column);
     };
 
     /// Create an expression that evaluates the expressions in WHERE and PREWHERE, depending only on the existing columns.
