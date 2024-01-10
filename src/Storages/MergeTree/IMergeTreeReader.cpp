@@ -40,12 +40,8 @@ IMergeTreeReader::IMergeTreeReader(
     , alter_conversions(data_part_info_for_read->getAlterConversions())
     /// For wide parts convert plain arrays of Nested to subcolumns
     /// to allow to use shared offset column from cache.
-    , requested_columns(data_part_info_for_read->isWidePart()
-        ? Nested::convertToSubcolumns(columns_)
-        : columns_)
-    , part_columns(data_part_info_for_read->isWidePart()
-        ? data_part_info_for_read->getColumnsDescriptionWithCollectedNested()
-        : data_part_info_for_read->getColumnsDescription())
+    , requested_columns(columns_)
+    , part_columns(data_part_info_for_read->getColumnsDescription())
 {
     columns_to_read.reserve(requested_columns.size());
     serializations.reserve(requested_columns.size());
@@ -69,8 +65,8 @@ void IMergeTreeReader::fillMissingColumns(Columns & res_columns, bool & should_e
         NamesAndTypesList available_columns(columns_to_read.begin(), columns_to_read.end());
         DB::fillMissingColumns(
             res_columns, num_rows,
-            Nested::convertToSubcolumns(requested_columns),
-            Nested::convertToSubcolumns(available_columns),
+            requested_columns,
+            available_columns,
             partially_read_columns, storage_snapshot->metadata, block_number);
 
         should_evaluate_missing_defaults = std::any_of(

@@ -13,7 +13,7 @@ void SinkToStorage::onConsume(Chunk chunk)
       * NOTE It'd better to do this check in serialization of nested structures (in place when this assumption is required),
       * but currently we don't have methods for serialization of nested structures "as a whole".
       */
-    Nested::validateArraySizes(getHeader().cloneWithColumns(chunk.getColumns()));
+    // Nested::validateArraySizes(getHeader().cloneWithColumns(chunk.getColumns()));
 
     consume(chunk.clone());
     if (!lastBlockIsDuplicate())

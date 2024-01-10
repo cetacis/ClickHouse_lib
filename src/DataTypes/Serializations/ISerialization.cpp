@@ -198,14 +198,7 @@ bool isOffsetsOfNested(const ISerialization::SubstreamPath & path)
 
 String ISerialization::getFileNameForStream(const String & name_in_storage, const SubstreamPath & path)
 {
-    String stream_name;
-    auto nested_storage_name = Nested::extractTableName(name_in_storage);
-    if (name_in_storage != nested_storage_name && isOffsetsOfNested(path))
-        stream_name = escapeForFileName(nested_storage_name);
-    else
-        stream_name = escapeForFileName(name_in_storage);
-
-    return getNameForSubstreamPath(std::move(stream_name), path.begin(), path.end(), true);
+    return getNameForSubstreamPath(escapeForFileName(name_in_storage), path.begin(), path.end(), true);
 }
 
 String ISerialization::getSubcolumnNameForStream(const SubstreamPath & path)

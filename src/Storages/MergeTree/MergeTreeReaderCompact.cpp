@@ -132,7 +132,8 @@ void MergeTreeReaderCompact::fillColumnPositions()
         const auto & column_to_read = columns_to_read[i];
 
         auto position = data_part_info_for_read->getColumnPosition(column_to_read.getNameInStorage());
-        bool is_array = isArray(column_to_read.type);
+        // bool is_array = isArray(column_to_read.type);
+        bool is_array = false;
 
         if (column_to_read.isSubcolumn())
         {
