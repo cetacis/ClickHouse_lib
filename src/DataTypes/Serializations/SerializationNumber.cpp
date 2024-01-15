@@ -45,7 +45,7 @@ void SerializationNumber<T>::serializeTextJSON(const IColumn & column, size_t ro
 }
 
 template <typename T>
-void SerializationNumber<T>::deserializeTextJSON(IColumn & column, ReadBuffer & istr, const FormatSettings & settings) const
+void SerializationNumber<T>::deserializeTextJSON(IColumn & column, ReadBuffer & istr, const FormatSettings & /* settings */) const
 {
     bool has_quote = false;
     if (!istr.eof() && *istr.position() == '"')        /// We understand the number both in quotes and without.
@@ -56,41 +56,20 @@ void SerializationNumber<T>::deserializeTextJSON(IColumn & column, ReadBuffer & 
 
     FieldType x;
 
-    /// null
-    if (!has_quote && !istr.eof() && *istr.position() == 'n')
+    if constexpr (is_floating_point<FieldType>)
     {
-        ++istr.position();
-        assertString("ull", istr);
-
-        x = NaNOrZero<T>();
+        readFloatTextPrecise(x, istr);
+        if (std::isinf(x))
+            throw Exception(ErrorCodes::CANNOT_PARSE_NUMBER, "Float point value overflow to INF");
     }
     else
     {
-        static constexpr bool is_uint8 = std::is_same_v<T, UInt8>;
-        static constexpr bool is_int8 = std::is_same_v<T, Int8>;
-
-        if (settings.json.read_bools_as_numbers || is_uint8 || is_int8)
-        {
-            // extra conditions to parse true/false strings into 1/0
-            if (istr.eof())
-                throwReadAfterEOF();
-            if (*istr.position() == 't' || *istr.position() == 'f')
-            {
-                bool tmp = false;
-                readBoolTextWord(tmp, istr);
-                x = tmp;
-            }
-            else
-                readText(x, istr);
-        }
-        else
-        {
-            readText(x, istr);
-        }
-
-        if (has_quote)
-            assertChar('"', istr);
+        if (!tryReadText(x, istr))
+            throw Exception(ErrorCodes::CANNOT_PARSE_NUMBER, "Cannot read integer value");
     }
+
+    if (has_quote)
+        assertChar('"', istr);
 
     assert_cast<ColumnVector<T> &>(column).getData().push_back(x);
 }
