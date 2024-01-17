@@ -399,6 +399,10 @@ set(ARROW_SRCS
         "${LIBRARY_DIR}/compute/row/grouper.cc"
         "${LIBRARY_DIR}/compute/row/row_internal.cc"
 
+        "${LIBRARY_DIR}/compute/key_hash.cc"
+        "${LIBRARY_DIR}/compute/key_map.cc"
+        "${LIBRARY_DIR}/compute/util.cc"
+
         "${LIBRARY_DIR}/ipc/dictionary.cc"
         "${LIBRARY_DIR}/ipc/feather.cc"
         "${LIBRARY_DIR}/ipc/message.cc"
