@@ -232,6 +232,13 @@ void SerializationBool::serializeTextJSON(const IColumn &column, size_t row_num,
 
 void SerializationBool::deserializeTextJSON(IColumn &column, ReadBuffer &istr, const FormatSettings &) const
 {
+    bool has_quote = false;
+    if (!istr.eof() && *istr.position() == '"')
+    {
+        has_quote = true;
+        ++istr.position();
+    }
+
     if (istr.eof())
         throw Exception(ErrorCodes::CANNOT_PARSE_BOOL, "Expected boolean value but get EOF.");
 
@@ -241,11 +248,12 @@ void SerializationBool::deserializeTextJSON(IColumn &column, ReadBuffer &istr, c
     char first_char = *istr.position();
     if (first_char == 't' || first_char == 'f')
         readBoolTextWord(value, istr);
-    else if (first_char == '1' || first_char == '0')
-        readBoolText(value, istr);
     else
         throw Exception(ErrorCodes::CANNOT_PARSE_BOOL,
-            "Invalid boolean value, should be true/false, 1/0, but it starts with the '{}' character.", first_char);
+            "Invalid boolean value, should be true/false, optionally double quoted, but it starts with the '{}' character.", first_char);
+
+    if (has_quote)
+        assertChar('"', istr);
 
     col->insert(value);
 }
