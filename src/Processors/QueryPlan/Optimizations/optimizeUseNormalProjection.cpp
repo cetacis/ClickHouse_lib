@@ -135,6 +135,10 @@ bool optimizeUseNormalProjections(Stack & stack, QueryPlan::Nodes & nodes)
     std::list<NormalProjectionCandidate> candidates;
     NormalProjectionCandidate * best_candidate = nullptr;
 
+    const Names & virt_columns = reading->getVirtualColumnNames();
+    if (std::find(virt_columns.begin(), virt_columns.end(), "_part_offset") != virt_columns.end())
+        return false;
+
     const Names & required_columns = reading->getRealColumnNames();
     const auto & parts = reading->getParts();
     const auto & alter_conversions = reading->getAlterConvertionsForParts();
