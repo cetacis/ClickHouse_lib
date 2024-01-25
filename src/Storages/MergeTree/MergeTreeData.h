@@ -988,6 +988,12 @@ public:
     void removeQueryId(const String & query_id) const;
     void removeQueryIdNoLock(const String & query_id) const TSA_REQUIRES(query_id_set_mutex);
 
+    std::set<String> getQueryIds() const
+    {
+        auto lock = std::lock_guard<std::mutex>(query_id_set_mutex);
+        return query_id_set;
+    }
+
     /// Return the partition expression types as a Tuple type. Return DataTypeUInt8 if partition expression is empty.
     DataTypePtr getPartitionValueType() const;
 
