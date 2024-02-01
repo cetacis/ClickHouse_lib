@@ -344,7 +344,7 @@ void SerializationString::deserializeTextJSON(IColumn & column, ReadBuffer & ist
         if (tryReadFloatText(tmp, buf) && buf.eof())
             read(column, [&](ColumnString::Chars & data) { data.insert(field.begin(), field.end()); });
         else
-            throw Exception(ErrorCodes::INCORRECT_DATA, "Cannot parse JSON String value here: {}", field);
+            throw ParsingException(ErrorCodes::INCORRECT_DATA, "Cannot parse JSON String value here: {}", field);
     }
     else
         read(column, [&](ColumnString::Chars & data) { readJSONStringInto(data, istr); });

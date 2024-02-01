@@ -97,19 +97,6 @@ inline char parseEscapeSequence(char c)
     }
 }
 
-
-/// Function throwReadAfterEOF is located in VarInt.h
-
-
-inline void readChar(char & x, ReadBuffer & buf)
-{
-    if (buf.eof()) [[unlikely]]
-        throwReadAfterEOF();
-    x = *buf.position();
-    ++buf.position();
-}
-
-
 /// Read POD-type in native format
 template <typename T>
 inline void readPODBinary(T & x, ReadBuffer & buf)
@@ -182,6 +169,15 @@ void assertEOF(ReadBuffer & buf);
 void assertNotEOF(ReadBuffer & buf);
 
 [[noreturn]] void throwAtAssertionFailed(const char * s, ReadBuffer & buf);
+
+inline void readChar(char & x, ReadBuffer & buf)
+{
+    if (buf.eof()) [[unlikely]]
+        throwAtAssertionFailed("not eof", buf);
+
+    x = *buf.position();
+    ++buf.position();
+}
 
 inline bool checkChar(char c, ReadBuffer & buf)
 {
@@ -261,7 +257,7 @@ inline void readBoolText(bool & x, ReadBuffer & buf)
 inline void readBoolTextWord(bool & x, ReadBuffer & buf, bool support_upper_case = false)
 {
     if (buf.eof()) [[unlikely]]
-        throwReadAfterEOF();
+        throwAtAssertionFailed("not eof", buf);
 
     switch (*buf.position())
     {
@@ -318,7 +314,7 @@ ReturnType readIntTextImpl(T & x, ReadBuffer & buf)
     if (buf.eof()) [[unlikely]]
     {
         if constexpr (throw_exception)
-            throwReadAfterEOF();
+            throwAtAssertionFailed("not eof", buf);
         else
             return ReturnType(false);
     }
@@ -484,10 +480,10 @@ void readIntTextUnsafe(T & x, ReadBuffer & buf)
     bool negative = false;
     make_unsigned_t<T> res = 0;
 
-    auto on_error = []
+    auto on_error = [&]
     {
         if (throw_on_error)
-            throwReadAfterEOF();
+            throwAtAssertionFailed("not eof", buf);
     };
 
     if (buf.eof()) [[unlikely]]
@@ -1405,7 +1401,7 @@ template <typename T>
 inline void readCSVSimple(T & x, ReadBuffer & buf)
 {
     if (buf.eof()) [[unlikely]]
-        throwReadAfterEOF();
+        throwAtAssertionFailed("not eof", buf);
 
     char maybe_quote = *buf.position();
 
@@ -1423,7 +1419,7 @@ template <typename T>
 inline void readCSVSimple(T & x, ReadBuffer & buf, const DateLUTImpl & time_zone)
 {
     if (buf.eof()) [[unlikely]]
-        throwReadAfterEOF();
+        throwAtAssertionFailed("not eof", buf);
 
     char maybe_quote = *buf.position();
 

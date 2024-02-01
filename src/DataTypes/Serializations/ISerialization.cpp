@@ -310,7 +310,7 @@ void ISerialization::throwUnexpectedDataAfterParsedValue(IColumn & column, ReadB
 {
     WriteBufferFromOwnString ostr;
     serializeText(column, column.size() - 1, ostr, settings);
-    throw Exception(
+    throw ParsingException(
         ErrorCodes::UNEXPECTED_DATA_AFTER_PARSED_VALUE,
         "Unexpected data '{}' after parsed {} value '{}'",
         std::string(istr.position(), std::min(size_t(10), istr.available())),

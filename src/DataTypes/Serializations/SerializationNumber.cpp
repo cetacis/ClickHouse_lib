@@ -60,12 +60,12 @@ void SerializationNumber<T>::deserializeTextJSON(IColumn & column, ReadBuffer & 
     {
         readFloatTextPrecise(x, istr);
         if (std::isinf(x))
-            throw Exception(ErrorCodes::CANNOT_PARSE_NUMBER, "Float point value overflow to INF");
+            throw ParsingException(ErrorCodes::CANNOT_PARSE_NUMBER, "Float point value overflow to INF");
     }
     else
     {
         if (!tryReadText(x, istr))
-            throw Exception(ErrorCodes::CANNOT_PARSE_NUMBER, "Cannot read integer value");
+            throw ParsingException(ErrorCodes::CANNOT_PARSE_NUMBER, "Cannot read integer value");
 
         if (!istr.eof() && *istr.position() == '.') /// Try read float
         {
@@ -73,7 +73,7 @@ void SerializationNumber<T>::deserializeTextJSON(IColumn & column, ReadBuffer & 
             readFloatTextPrecise(x_f, istr);
 
             if (std::isinf(x))
-                throw Exception(ErrorCodes::CANNOT_PARSE_NUMBER, "Float point value overflow to INF");
+                throw ParsingException(ErrorCodes::CANNOT_PARSE_NUMBER, "Float point value overflow to INF");
 
             x += static_cast<FieldType>(round(x_f));
         }

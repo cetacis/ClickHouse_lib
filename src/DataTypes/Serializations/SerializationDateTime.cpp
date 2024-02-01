@@ -139,7 +139,7 @@ void SerializationDateTime::deserializeTextCSV(IColumn & column, ReadBuffer & is
     time_t x = 0;
 
     if (istr.eof())
-        throwReadAfterEOF();
+        throwAtAssertionFailed("not eof", istr);
 
     char maybe_quote = *istr.position();
 

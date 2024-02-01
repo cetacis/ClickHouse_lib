@@ -38,7 +38,7 @@ void SerializationDecimal<T>::readText(T & x, ReadBuffer & istr, UInt32 precisio
         readDecimalText(istr, x, precision, unread_scale);
 
     if (common::mulOverflow(x.value, DecimalUtils::scaleMultiplier<T>(unread_scale), x.value))
-        throw Exception(ErrorCodes::DECIMAL_OVERFLOW, "Decimal math overflow");
+        throw ParsingException(ErrorCodes::DECIMAL_OVERFLOW, "Decimal math overflow");
 }
 
 template <typename T>

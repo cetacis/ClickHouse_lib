@@ -311,10 +311,10 @@ static ReturnType parseComplexEscapeSequence(Vector & s, ReadBuffer & buf)
 {
     static constexpr bool throw_exception = std::is_same_v<ReturnType, void>;
 
-    auto error = [](const char * message [[maybe_unused]], int code [[maybe_unused]])
+    auto error = [](FormatStringHelper<> message [[maybe_unused]], int code [[maybe_unused]])
     {
         if constexpr (throw_exception)
-            throw Exception::createDeprecated(message, code);
+            throw ParsingException(code, std::move(message));
         return ReturnType(false);
     };
 
@@ -383,10 +383,10 @@ static ReturnType parseJSONEscapeSequence(Vector & s, ReadBuffer & buf)
 {
     static constexpr bool throw_exception = std::is_same_v<ReturnType, void>;
 
-    auto error = [](const char * message [[maybe_unused]], int code [[maybe_unused]])
+    auto error = [](FormatStringHelper<> message [[maybe_unused]], int code [[maybe_unused]])
     {
         if constexpr (throw_exception)
-            throw Exception::createDeprecated(message, code);
+            throw ParsingException(code, std::move(message));
         return ReturnType(false);
     };
 
@@ -1087,7 +1087,7 @@ ReturnType readDateTextFallback(LocalDate & date, ReadBuffer & buf)
     auto error = []
     {
         if constexpr (throw_exception)
-            throw Exception(ErrorCodes::CANNOT_PARSE_DATE, "Cannot parse date: value is too short");
+            throw ParsingException(ErrorCodes::CANNOT_PARSE_DATE, "Cannot parse date: value is too short");
         return ReturnType(false);
     };
 
@@ -1285,7 +1285,7 @@ template bool readDateTimeTextFallback<bool, true>(time_t &, ReadBuffer &, const
 void skipJSONField(ReadBuffer & buf, StringRef name_of_field)
 {
     if (buf.eof())
-        throw Exception(ErrorCodes::INCORRECT_DATA, "Unexpected EOF for key '{}'", name_of_field.toString());
+        throw ParsingException(ErrorCodes::INCORRECT_DATA, "Unexpected EOF for key '{}'", name_of_field.toString());
     else if (*buf.position() == '"') /// skip double-quoted string
     {
         NullOutput sink;
@@ -1298,7 +1298,7 @@ void skipJSONField(ReadBuffer & buf, StringRef name_of_field)
 
         double v;
         if (!tryReadFloatText(v, buf))
-            throw Exception(ErrorCodes::INCORRECT_DATA, "Expected a number field for key '{}'", name_of_field.toString());
+            throw ParsingException(ErrorCodes::INCORRECT_DATA, "Expected a number field for key '{}'", name_of_field.toString());
     }
     else if (*buf.position() == 'n') /// skip null
     {
@@ -1339,7 +1339,7 @@ void skipJSONField(ReadBuffer & buf, StringRef name_of_field)
                 break;
             }
             else
-                throw Exception(ErrorCodes::INCORRECT_DATA, "Unexpected symbol for key '{}'", name_of_field.toString());
+                throw ParsingException(ErrorCodes::INCORRECT_DATA, "Unexpected symbol for key '{}'", name_of_field.toString());
         }
     }
     else if (*buf.position() == '{') /// skip whole object
@@ -1356,12 +1356,12 @@ void skipJSONField(ReadBuffer & buf, StringRef name_of_field)
                 readJSONStringInto(sink, buf);
             }
             else
-                throw Exception(ErrorCodes::INCORRECT_DATA, "Unexpected symbol for key '{}'", name_of_field.toString());
+                throw ParsingException(ErrorCodes::INCORRECT_DATA, "Unexpected symbol for key '{}'", name_of_field.toString());
 
             // ':'
             skipWhitespaceIfAny(buf);
             if (buf.eof() || !(*buf.position() == ':'))
-                throw Exception(ErrorCodes::INCORRECT_DATA, "Unexpected symbol for key '{}'", name_of_field.toString());
+                throw ParsingException(ErrorCodes::INCORRECT_DATA, "Unexpected symbol for key '{}'", name_of_field.toString());
             ++buf.position();
             skipWhitespaceIfAny(buf);
 
@@ -1377,13 +1377,13 @@ void skipJSONField(ReadBuffer & buf, StringRef name_of_field)
         }
 
         if (buf.eof())
-            throw Exception(ErrorCodes::INCORRECT_DATA, "Unexpected EOF for key '{}'", name_of_field.toString());
+            throw ParsingException(ErrorCodes::INCORRECT_DATA, "Unexpected EOF for key '{}'", name_of_field.toString());
         ++buf.position();
     }
     else
     {
-        throw Exception(ErrorCodes::INCORRECT_DATA, "Unexpected symbol '{}' for key '{}'",
-                        std::string(*buf.position(), 1), name_of_field.toString());
+        throw ParsingException(
+            ErrorCodes::INCORRECT_DATA, "Unexpected symbol '{}' for key '{}'", std::string(*buf.position(), 1), name_of_field.toString());
     }
 }
 
