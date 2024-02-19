@@ -27,6 +27,8 @@ namespace DB
 class StorageMergeTree : public MergeTreeData
 {
 public:
+    virtual void onNewMergedPart(const DataPartPtr & /* part */) { }
+
     /** Attach the table with the appropriate name, along the appropriate path (with / at the end),
       *  (correctness of names and paths are not checked)
       *  consisting of the specified columns.
