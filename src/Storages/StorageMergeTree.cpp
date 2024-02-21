@@ -1358,10 +1358,9 @@ bool StorageMergeTree::scheduleDataProcessingJob(BackgroundJobsAssignee & assign
     }
 
     bool has_mutations = false;
+    if (!merger_mutator.merges_blocker.isCancelled())
     {
         std::unique_lock lock(currently_processing_in_background_mutex);
-        if (merger_mutator.merges_blocker.isCancelled())
-            return false;
 
         String out_reason;
         merge_entry = selectPartsToMerge(metadata_snapshot, false, {}, false, out_reason, shared_lock, lock, txn);
