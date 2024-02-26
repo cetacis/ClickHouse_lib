@@ -838,6 +838,7 @@ MergeTreeRangeReader::MergeTreeRangeReader(
             /// _part_offset column is filled by the first reader.
             read_sample_block.insert(ColumnWithTypeAndName(ColumnUInt64::create(), std::make_shared<DataTypeUInt64>(), column_name));
             result_sample_block.insert(ColumnWithTypeAndName(ColumnUInt64::create(), std::make_shared<DataTypeUInt64>(), column_name));
+            need_part_offset = true;
         }
     }
 
@@ -1162,7 +1163,7 @@ MergeTreeRangeReader::ReadResult MergeTreeRangeReader::startReadingChain(size_t 
     if (!result.rows_per_granule.empty())
         result.adjustLastGranule();
 
-    if (read_sample_block.has("_part_offset"))
+    if (need_part_offset)
         fillPartOffsetColumn(result, leading_begin_part_offset, leading_end_part_offset);
 
     return result;

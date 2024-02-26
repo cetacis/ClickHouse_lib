@@ -320,6 +320,7 @@ private:
 
     Block read_sample_block;    /// Block with columns that are actually read from disk + non-const virtual columns that are filled at this step.
     Block result_sample_block;  /// Block with columns that are returned by this step.
+    bool need_part_offset = false;
 
     bool last_reader_in_chain = false;
     bool is_initialized = false;

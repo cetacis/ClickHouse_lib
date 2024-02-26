@@ -1224,6 +1224,7 @@ std::shared_ptr<QueryIdHolder> MergeTreeDataSelectExecutor::checkLimits(
 static void selectColumnNames(
     const Names & column_names_to_return,
     const MergeTreeData & data,
+    const StorageMetadataPtr & metadata_snapshot,
     Names & real_column_names,
     Names & virt_column_names,
     bool & sample_factor_column_queried)
@@ -1232,7 +1233,11 @@ static void selectColumnNames(
 
     for (const String & name : column_names_to_return)
     {
-        if (name == "_part")
+        if (metadata_snapshot->columns.tryGetPhysical(name))
+        {
+            real_column_names.push_back(name);
+        }
+        else if (name == "_part")
         {
             virt_column_names.push_back(name);
         }
@@ -1277,10 +1282,6 @@ static void selectColumnNames(
             sample_factor_column_queried = true;
             virt_column_names.push_back(name);
         }
-        else
-        {
-            real_column_names.push_back(name);
-        }
     }
 }
 
@@ -1307,7 +1308,8 @@ MergeTreeDataSelectAnalysisResultPtr MergeTreeDataSelectExecutor::estimateNumMar
     /// The virtual column `_sample_factor` (which is equal to 1 / used sample rate) can be requested in the query.
     bool sample_factor_column_queried = false;
 
-    selectColumnNames(column_names_to_return, data, real_column_names, virt_column_names, sample_factor_column_queried);
+    selectColumnNames(
+        column_names_to_return, data, metadata_snapshot_base, real_column_names, virt_column_names, sample_factor_column_queried);
 
     std::optional<ReadFromMergeTree::Indexes> indexes;
     /// NOTE: We don't need alter_conversions because the returned analysis_result is only used for:
@@ -1358,7 +1360,8 @@ QueryPlanStepPtr MergeTreeDataSelectExecutor::readFromParts(
     /// The virtual column `_sample_factor` (which is equal to 1 / used sample rate) can be requested in the query.
     bool sample_factor_column_queried = false;
 
-    selectColumnNames(column_names_to_return, data, real_column_names, virt_column_names, sample_factor_column_queried);
+    selectColumnNames(
+        column_names_to_return, data, storage_snapshot->metadata, real_column_names, virt_column_names, sample_factor_column_queried);
 
     /// Do not keep data parts in snapshot.
     /// They are stored separately, and some could be released after PK analysis.
