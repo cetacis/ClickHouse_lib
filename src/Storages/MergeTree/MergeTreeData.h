@@ -96,6 +96,8 @@ struct DataPartsLock
     std::optional<Stopwatch> lock_watch;
     DataPartsLock() = default;
     explicit DataPartsLock(std::mutex & data_parts_mutex_);
+    DataPartsLock(DataPartsLock && other) noexcept;
+    DataPartsLock & operator=(DataPartsLock && other) noexcept;
 
     ~DataPartsLock();
 };

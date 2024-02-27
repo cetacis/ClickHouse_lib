@@ -331,6 +331,18 @@ DataPartsLock::DataPartsLock(std::mutex & data_parts_mutex_)
     ProfileEvents::increment(ProfileEvents::PartsLockWaitMicroseconds, wait_watch->elapsedMicroseconds());
 }
 
+DataPartsLock::DataPartsLock(DataPartsLock && other) noexcept
+    : wait_watch(std::move(other.wait_watch)), lock(std::move(other.lock)), lock_watch(std::move(other.lock_watch))
+{
+}
+
+DataPartsLock & DataPartsLock::operator=(DataPartsLock && other) noexcept
+{
+    wait_watch = std::move(other.wait_watch);
+    lock = std::move(other.lock);
+    lock_watch = std::move(other.lock_watch);
+    return *this;
+}
 
 DataPartsLock::~DataPartsLock()
 {
