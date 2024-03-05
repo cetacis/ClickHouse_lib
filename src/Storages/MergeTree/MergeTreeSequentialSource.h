@@ -3,6 +3,7 @@
 #include <Storages/MergeTree/MergeTreeData.h>
 #include <Storages/MergeTree/IMergeTreeReader.h>
 #include <Storages/MergeTree/MarkRange.h>
+#include <Storages/MergeTree/PartsOffsets.h>
 #include <memory>
 
 namespace DB
@@ -14,6 +15,8 @@ Pipe createMergeTreeSequentialSource(
     const MergeTreeData & storage,
     const StorageSnapshotPtr & storage_snapshot,
     MergeTreeData::DataPartPtr data_part,
+    const PartsOffsets & offsets,
+    size_t prev_rows,
     Names columns_to_read,
     std::optional<MarkRanges> mark_ranges,
     bool apply_deleted_mask,

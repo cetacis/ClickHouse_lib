@@ -106,6 +106,7 @@ NameSet injectRequiredColumns(
 
     auto options = GetColumnsOptions(GetColumnsOptions::AllPhysical)
         .withExtendedObjects()
+        .withVirtuals()
         .withSystemColumns();
 
     if (with_subcolumns)

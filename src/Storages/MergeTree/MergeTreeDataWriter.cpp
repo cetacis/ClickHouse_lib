@@ -580,7 +580,7 @@ MergeTreeDataWriter::TemporaryPart MergeTreeDataWriter::writeTempPartImpl(
 
     for (const auto & projection : metadata_snapshot->getProjections())
     {
-        auto projection_block = projection.calculate(block, context);
+        auto projection_block = projection.calculate(block, context, perm_ptr);
         if (projection_block.rows())
         {
             auto proj_temp_part = writeProjectionPart(data, log, projection_block, projection, new_data_part.get());

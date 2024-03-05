@@ -109,7 +109,7 @@ protected:
 
 private:
     /// Columns that are requested to read.
-    NamesAndTypesList requested_columns;
+    const NamesAndTypesList requested_columns;
 
     /// Actual columns description in part.
     const ColumnsDescription & part_columns;

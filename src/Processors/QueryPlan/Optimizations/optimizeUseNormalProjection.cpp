@@ -65,7 +65,7 @@ static bool hasAllRequiredColumns(const ProjectionDescription * projection, cons
 {
     for (const auto & col : required_columns)
     {
-        if (!projection->sample_block.has(col))
+        if (!projection->sample_block.has(col) && col != "_part")
             return false;
     }
 
@@ -136,10 +136,8 @@ bool optimizeUseNormalProjections(Stack & stack, QueryPlan::Nodes & nodes)
     NormalProjectionCandidate * best_candidate = nullptr;
 
     const Names & virt_columns = reading->getVirtualColumnNames();
-    if (std::find(virt_columns.begin(), virt_columns.end(), "_part_offset") != virt_columns.end())
-        return false;
-
-    const Names & required_columns = reading->getRealColumnNames();
+    Names required_columns = reading->getRealColumnNames();
+    required_columns.insert(required_columns.end(), virt_columns.begin(), virt_columns.end());
     const auto & parts = reading->getParts();
     const auto & alter_conversions = reading->getAlterConvertionsForParts();
     const auto & query_info = reading->getQueryInfo();

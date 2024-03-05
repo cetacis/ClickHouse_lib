@@ -449,6 +449,14 @@ bool MergeTask::ExecuteAndFinalizeHorizontalPart::executeImpl()
     {
         global_ctx->rows_written += block.rows();
 
+        if (global_ctx->parent_part == nullptr && block.has("_part_offset"))
+        {
+            auto column = block.getByName("_part_offset").column->convertToFullColumnIfSparse();
+            const auto & offset_data = typeid_cast<const ColumnUInt64 &>(*column).getData();
+            global_ctx->offsets_ptr->insert(offset_data.begin(), offset_data.end());
+            block.erase("_part_offset");
+        }
+
         const_cast<MergedBlockOutputStream &>(*global_ctx->to).write(block);
 
         UInt64 result_rows = 0;
@@ -567,12 +575,15 @@ void MergeTask::VerticalMergeStage::prepareVerticalMergeForOneColumn() const
     global_ctx->column_progress = std::make_unique<MergeStageProgress>(ctx->progress_before, ctx->column_sizes->columnWeight(column_name));
 
     Pipes pipes;
+    size_t prev_rows = 0;
     for (size_t part_num = 0; part_num < global_ctx->future_part->parts.size(); ++part_num)
     {
         Pipe pipe = createMergeTreeSequentialSource(
             *global_ctx->data,
             global_ctx->storage_snapshot,
             global_ctx->future_part->parts[part_num],
+            *global_ctx->offsets_ptr,
+            prev_rows,
             column_names,
             /*mark_ranges=*/ {},
             /*apply_deleted_mask=*/ true,
@@ -582,6 +593,8 @@ void MergeTask::VerticalMergeStage::prepareVerticalMergeForOneColumn() const
             global_ctx->input_rows_filtered);
 
         pipes.emplace_back(std::move(pipe));
+
+        prev_rows += global_ctx->future_part->parts[part_num]->rows_count;
     }
 
     auto pipe = Pipe::unitePipes(std::move(pipes));
@@ -711,6 +724,7 @@ bool MergeTask::MergeProjectionsStage::mergeMinMaxIndexAndPrepareProjections() c
             ReadableSize(global_ctx->merge_list_element_ptr->bytes_read_uncompressed / elapsed_seconds));
     }
 
+    global_ctx->offsets_ptr->flush();
 
     const auto & projections = global_ctx->metadata_snapshot->getProjections();
 
@@ -763,6 +777,7 @@ bool MergeTask::MergeProjectionsStage::mergeMinMaxIndexAndPrepareProjections() c
             projection_merging_params,
             global_ctx->need_prefix,
             global_ctx->new_data_part.get(),
+            global_ctx->offsets_ptr,
             ".proj",
             NO_TRANSACTION_PTR,
             global_ctx->data,
@@ -770,6 +785,15 @@ bool MergeTask::MergeProjectionsStage::mergeMinMaxIndexAndPrepareProjections() c
             global_ctx->merges_blocker,
             global_ctx->ttl_merges_blocker));
     }
+
+    std::sort(
+        ctx->tasks_for_projections.begin(),
+        ctx->tasks_for_projections.end(),
+        [](const auto & l, const auto & r)
+        {
+            return l->global_ctx->metadata_snapshot->columns.has("_part_offset")
+                && !r->global_ctx->metadata_snapshot->columns.has("_part_offset");
+        });
 
     /// We will iterate through projections and execute them
     ctx->projections_iterator = ctx->tasks_for_projections.begin();
@@ -782,6 +806,12 @@ bool MergeTask::MergeProjectionsStage::executeProjections() const
 {
     if (ctx->projections_iterator == ctx->tasks_for_projections.end())
         return false;
+
+    if (!(*ctx->projections_iterator)->global_ctx->metadata_snapshot->columns.has("_part_offset"))
+    {
+        PartsOffsets offsets;
+        std::swap(*global_ctx->offsets_ptr, offsets);
+    }
 
     if ((*ctx->projections_iterator)->execute())
         return true;
@@ -922,13 +952,27 @@ void MergeTask::ExecuteAndFinalizeHorizontalPart::createMergedStream()
     global_ctx->horizontal_stage_progress = std::make_unique<MergeStageProgress>(
         ctx->column_sizes ? ctx->column_sizes->keyColumnsWeight() : 1.0);
 
+    Names merging_column_names = global_ctx->merging_column_names;
+    const auto & projections = global_ctx->metadata_snapshot->getProjections();
+    for (const auto & projection : projections)
+    {
+        if (projection.metadata->columns.has("_part_offset"))
+        {
+            merging_column_names.push_back("_part_offset");
+            break;
+        }
+    }
+
+    size_t prev_rows = 0;
     for (const auto & part : global_ctx->future_part->parts)
     {
         Pipe pipe = createMergeTreeSequentialSource(
             *global_ctx->data,
             global_ctx->storage_snapshot,
             part,
-            global_ctx->merging_column_names,
+            *global_ctx->offsets_ptr,
+            prev_rows,
+            merging_column_names,
             /*mark_ranges=*/ {},
             /*apply_deleted_mask=*/ true,
             ctx->read_with_direct_io,
@@ -945,6 +989,8 @@ void MergeTask::ExecuteAndFinalizeHorizontalPart::createMergedStream()
         }
 
         pipes.emplace_back(std::move(pipe));
+
+        prev_rows += part->rows_count;
     }
 
 

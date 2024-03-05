@@ -25,6 +25,7 @@
 #include <Storages/MergeTree/MergeProgress.h>
 #include <Storages/MergeTree/MergeTreeData.h>
 
+#include <Storages/MergeTree/PartsOffsets.h>
 
 namespace DB
 {
@@ -71,6 +72,7 @@ public:
         MergeTreeData::MergingParams merging_params_,
         bool need_prefix,
         IMergeTreeDataPart * parent_part_,
+        const std::shared_ptr<PartsOffsets> & offsets_ptr,
         String suffix_,
         MergeTreeTransactionPtr txn,
         MergeTreeData * data_,
@@ -93,6 +95,16 @@ public:
             global_ctx->deduplicate_by_columns = std::move(deduplicate_by_columns_);
             global_ctx->cleanup = std::move(cleanup_);
             global_ctx->parent_part = std::move(parent_part_);
+
+            std::vector<UInt64> starting_offsets;
+            UInt64 starting_offset = 0;
+            for (const auto & part : global_ctx->future_part->parts)
+            {
+                starting_offsets.push_back(starting_offset);
+                starting_offset += part->rows_count;
+            }
+            global_ctx->offsets_ptr
+                = offsets_ptr ? offsets_ptr : std::make_shared<PartsOffsets>(std::move(starting_offsets), starting_offset);
             global_ctx->data = std::move(data_);
             global_ctx->mutator = std::move(mutator_);
             global_ctx->merges_blocker = std::move(merges_blocker_);
@@ -155,6 +167,8 @@ private:
         FutureMergedMutatedPartPtr future_part{nullptr};
         /// This will be either nullptr or new_data_part, so raw pointer is ok.
         IMergeTreeDataPart * parent_part{nullptr};
+        std::shared_ptr<PartsOffsets> offsets_ptr;
+
         ContextPtr context{nullptr};
         time_t time_of_merge{0};
         ReservationSharedPtr space_reservation{nullptr};

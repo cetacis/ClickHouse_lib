@@ -98,7 +98,7 @@ struct ProjectionDescription
 
     bool isPrimaryKeyColumnPossiblyWrappedInFunctions(const ASTPtr & node) const;
 
-    Block calculate(const Block & block, ContextPtr context) const;
+    Block calculate(const Block & block, ContextPtr context, const IColumn::Permutation * perm_ptr = nullptr) const;
 
     String getDirectoryName() const { return name + ".proj"; }
 };

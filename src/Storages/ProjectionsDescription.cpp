@@ -106,7 +106,9 @@ ProjectionDescription::getProjectionFromAST(const ASTPtr & definition_ast, const
     auto query = projection_definition->query->as<ASTProjectionSelectQuery &>();
     result.query_ast = query.cloneToASTSelect();
 
-    auto external_storage_holder = std::make_shared<TemporaryTableHolder>(query_context, columns, ConstraintsDescription{});
+    auto new_columns = columns;
+    new_columns.add(ColumnDescription("_part_offset", std::make_shared<DataTypeUInt64>()));
+    auto external_storage_holder = std::make_shared<TemporaryTableHolder>(query_context, new_columns, ConstraintsDescription{});
     StoragePtr storage = external_storage_holder->getTable();
     InterpreterSelectQuery select(
         result.query_ast,
@@ -114,7 +116,7 @@ ProjectionDescription::getProjectionFromAST(const ASTPtr & definition_ast, const
         storage,
         {},
         /// Here we ignore ast optimizations because otherwise aggregation keys may be removed from result header as constants.
-        SelectQueryOptions{QueryProcessingStage::WithMergeableState}
+        SelectQueryOptions{query.orderBy() ? QueryProcessingStage::FetchColumns : QueryProcessingStage::WithMergeableState}
             .modify()
             .ignoreAlias()
             .ignoreASTOptimizations()
@@ -289,7 +291,7 @@ void ProjectionDescription::recalculateWithNewColumns(const ColumnsDescription &
 }
 
 
-Block ProjectionDescription::calculate(const Block & block, ContextPtr context) const
+Block ProjectionDescription::calculate(const Block & block, ContextPtr context, const IColumn::Permutation * perm_ptr) const
 {
     auto mut_context = Context::createCopy(context);
     /// We ignore aggregate_functions_null_for_empty cause it changes aggregate function types.
@@ -297,10 +299,30 @@ Block ProjectionDescription::calculate(const Block & block, ContextPtr context) 
     mut_context->setSetting("aggregate_functions_null_for_empty", Field(0));
     mut_context->setSetting("transform_null_in", Field(0));
 
+    Block source_block = block;
+    if (sample_block.has("_part_offset"))
+    {
+        auto uint64 = std::make_shared<DataTypeUInt64>();
+        auto column = uint64->createColumn();
+        auto & offset = assert_cast<ColumnUInt64 &>(*column).getData();
+        offset.resize_exact(block.rows());
+        if (perm_ptr)
+        {
+            for (size_t i = 0; i < block.rows(); ++i)
+                offset[(*perm_ptr)[i]] = i;
+        }
+        else
+        {
+            std::iota(offset.begin(), offset.end(), 0);
+        }
+
+        source_block.insert({std::move(column), std::move(uint64), "_part_offset"});
+    }
+
     auto builder = InterpreterSelectQuery(
                        query_ast,
                        mut_context,
-                       Pipe(std::make_shared<SourceFromSingleChunk>(block)),
+                       Pipe(std::make_shared<SourceFromSingleChunk>(std::move(source_block))),
                        SelectQueryOptions{
                            type == ProjectionDescription::Type::Normal ? QueryProcessingStage::FetchColumns
                                                                        : QueryProcessingStage::WithMergeableState}

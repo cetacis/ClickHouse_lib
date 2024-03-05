@@ -697,6 +697,7 @@ MergeTaskPtr MergeTreeDataMergerMutator::mergePartsToTemporaryPart(
         merging_params,
         need_prefix,
         parent_part,
+        nullptr,
         suffix,
         txn,
         &data,
