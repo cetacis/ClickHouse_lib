@@ -185,10 +185,35 @@ bool optimizeUseNormalProjections(Stack & stack, QueryPlan::Nodes & nodes)
             continue;
 
         if (candidate.sum_marks >= ordinary_reading_marks)
+        {
+            LOG_DEBUG(
+                &::Poco::Logger::get("optimizeUseNormalProjections"),
+                "Projection {} is useable but it needs to read {} marks, which is no better than reading {} marks from original table",
+                candidate.projection->name,
+                candidate.sum_marks,
+                ordinary_reading_marks);
             continue;
+        }
 
         if (best_candidate == nullptr || candidate.sum_marks < best_candidate->sum_marks)
+        {
+            LOG_DEBUG(
+                &::Poco::Logger::get("optimizeUseNormalProjections"),
+                "Projection {} is selected as current best candidate with {} marks to read",
+                candidate.projection->name,
+                candidate.sum_marks);
             best_candidate = &candidate;
+        }
+        else
+        {
+            LOG_DEBUG(
+                &::Poco::Logger::get("optimizeUseNormalProjections"),
+                "Projection {} with {} marks is less efficient than current best candidate {} with {} marks",
+                candidate.projection->name,
+                candidate.sum_marks,
+                best_candidate->projection->name,
+                best_candidate->sum_marks);
+        }
     }
 
     if (!best_candidate)
