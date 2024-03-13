@@ -658,9 +658,11 @@ MergeTreeDataWriter::TemporaryPart MergeTreeDataWriter::writeProjectionPartImpl(
         projection_part_storage->createDirectories();
     }
 
+    auto indices = MergeTreeIndexFactory::instance().getMany(metadata_snapshot->getSecondaryIndices());
+
     /// If we need to calculate some columns to sort.
     if (metadata_snapshot->hasSortingKey() || metadata_snapshot->hasSecondaryIndices())
-        data.getSortingKeyAndSkipIndicesExpression(metadata_snapshot, {})->execute(block);
+        data.getSortingKeyAndSkipIndicesExpression(metadata_snapshot, indices)->execute(block);
 
     Names sort_columns = metadata_snapshot->getSortingKeyColumns();
     SortDescription sort_description;
@@ -701,7 +703,7 @@ MergeTreeDataWriter::TemporaryPart MergeTreeDataWriter::writeProjectionPartImpl(
         new_data_part,
         metadata_snapshot,
         columns,
-        MergeTreeIndices{},
+        indices,
         Statistics{}, /// TODO(hanfei): It should be helpful to write statistics for projection result.
         compression_codec,
         NO_TRANSACTION_PTR,

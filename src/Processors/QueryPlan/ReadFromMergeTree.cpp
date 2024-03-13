@@ -1373,7 +1373,8 @@ static void buildIndexes(
     else
         indexes->part_values = MergeTreeDataSelectExecutor::filterPartsByVirtualColumns(data, parts, query_info.query, context);
 
-    MergeTreeDataSelectExecutor::buildKeyConditionFromPartOffset(indexes->part_offset_condition, filter_actions_dag, context);
+    if (!parts.empty() && parts[0]->getParentPart() == nullptr)
+        MergeTreeDataSelectExecutor::buildKeyConditionFromPartOffset(indexes->part_offset_condition, filter_actions_dag, context);
 
     indexes->use_skip_indexes = settings.use_skip_indexes;
     bool final = query_info.isFinal();

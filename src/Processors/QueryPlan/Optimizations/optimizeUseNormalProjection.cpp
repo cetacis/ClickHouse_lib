@@ -199,9 +199,10 @@ bool optimizeUseNormalProjections(Stack & stack, QueryPlan::Nodes & nodes)
         {
             LOG_DEBUG(
                 &::Poco::Logger::get("optimizeUseNormalProjections"),
-                "Projection {} is selected as current best candidate with {} marks to read",
+                "Projection {} is selected as current best candidate with {} marks to read, while original table needs to scan {} marks",
                 candidate.projection->name,
-                candidate.sum_marks);
+                candidate.sum_marks,
+                ordinary_reading_marks);
             best_candidate = &candidate;
         }
         else
