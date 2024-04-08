@@ -865,7 +865,7 @@ public:
     /// Get constant pointer to storage settings.
     /// Copy this pointer into your scope and you will
     /// get consistent settings.
-    MergeTreeSettingsPtr getSettings() const
+    virtual MergeTreeSettingsPtr getSettings() const
     {
         return storage_settings.get();
     }
