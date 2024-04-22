@@ -1475,6 +1475,8 @@ try
 
             ProfileEvents::increment(ProfileEvents::MainConfigLoads);
 
+            global_context->setConfig(config);
+
             /// Must be the last.
             latest_config = config;
         },
