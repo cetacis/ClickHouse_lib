@@ -2679,6 +2679,7 @@ tupleHammingDistance
 tupleMinus
 tupleMultiply
 tupleMultiplyByNumber
+tupleNames
 tupleNegate
 tuplePlus
 tupleToNameValuePairs

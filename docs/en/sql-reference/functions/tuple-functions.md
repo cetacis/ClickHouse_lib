@@ -7,7 +7,7 @@ sidebar_label: Tuples
 ## tuple
 
 A function that allows grouping multiple columns.
-For columns with the types T1, T2, …, it returns a Tuple(T1, T2, …) type tuple containing these columns. There is no cost to execute the function.
+For columns C1, C2, … with the types T1, T2, …, it returns a Tuple(C1 T1, C2 T2, …) type tuple containing these columns. There is no cost to execute the function.
 Tuples are normally used as intermediate values for an argument of IN operators, or for creating a list of formal parameters of lambda functions. Tuples can’t be written to a table.
 
 The function implements the operator `(x, y, …)`.
@@ -257,6 +257,61 @@ Result:
 ┌─tupleToNameValuePairs(tuple(3, 2, 1))─┐
 │ [('1',3),('2',2),('3',1)]             │
 └───────────────────────────────────────┘
+```
+
+## tupleNames
+
+Turns a named tuple into a constant array of names. For a `Tuple(a T, b T, ..., c T)` returns `Array(String, ...)`
+in which the `Strings` represents the named fields of the tuple.
+
+**Syntax**
+
+``` sql
+tupleNames(tuple)
+```
+
+**Arguments**
+
+- `tuple` — Named tuple. [Tuple](../../sql-reference/data-types/tuple.md) with any types of values.
+
+**Returned value**
+
+- An array with strings.
+
+Type: [Array](../../sql-reference/data-types/array.md)([Tuple](../../sql-reference/data-types/tuple.md)([String](../../sql-reference/data-types/string.md), ...)).
+
+**Example**
+
+Query:
+
+``` sql
+CREATE TABLE tupletest (col Tuple(user_ID UInt64, session_ID UInt64)) ENGINE = Memory;
+
+INSERT INTO tupletest VALUES (tuple(1, 2));
+
+SELECT tupleNames(col) FROM tupletest;
+```
+
+Result:
+
+``` text
+┌─tupleNames(col)──────────┐
+│ ['user_ID','session_ID'] │
+└──────────────────────────┘
+```
+
+If you pass a simple tuple to the function, ClickHouse uses the indexes of the values as their names:
+
+``` sql
+SELECT tupleNames(tuple(3, 2, 1));
+```
+
+Result:
+
+``` text
+┌─tupleNames((3, 2, 1))─┐
+│ ['1','2','3']         │
+└───────────────────────┘
 ```
 
 ## tuplePlus

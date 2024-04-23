@@ -15,7 +15,7 @@ namespace ErrorCodes
     extern const int NUMBER_OF_ARGUMENTS_DOESNT_MATCH;
 }
 
-/** tuple(x, y, ...) is a function that allows you to group several columns
+/** tuple(x, y, ...) is a function that allows you to group several columns.
   * tupleElement(tuple, n) is a function that allows you to retrieve a column from tuple.
   */
 class FunctionTuple : public IFunction
@@ -43,12 +43,20 @@ public:
     bool useDefaultImplementationForConstants() const override { return true; }
     bool useDefaultImplementationForLowCardinalityColumns() const override { return false; }
 
-    DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
+    DataTypePtr getReturnTypeImpl(const ColumnsWithTypeAndName & arguments) const override
     {
         if (arguments.empty())
             throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires at least one argument.", getName());
 
-        return std::make_shared<DataTypeTuple>(arguments);
+        DataTypes types;
+        Names names;
+        for (const auto & argument : arguments)
+        {
+            types.emplace_back(argument.type);
+            names.emplace_back(argument.name);
+        }
+
+        return std::make_shared<DataTypeTuple>(types, names);
     }
 
     ColumnPtr executeImpl(const ColumnsWithTypeAndName & arguments, const DataTypePtr &, size_t /*input_rows_count*/) const override
@@ -58,9 +66,9 @@ public:
         for (size_t i = 0; i < tuple_size; ++i)
         {
             /** If tuple is mixed of constant and not constant columns,
-                *  convert all to non-constant columns,
-                *  because many places in code expect all non-constant columns in non-constant tuple.
-                */
+              *  convert all to non-constant columns,
+              *  because many places in code expect all non-constant columns in non-constant tuple.
+              */
             tuple_columns[i] = arguments[i].column->convertToFullColumnIfConst();
         }
         return ColumnTuple::create(tuple_columns);
