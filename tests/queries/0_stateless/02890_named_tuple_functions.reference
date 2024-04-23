@@ -1,2 +1,4 @@
 Tuple(\n    i Int32,\n    j Int32)
 ['i','j']
+Tuple(\n    i Int32,\n    i_0 Int32,\n    j Int32,\n    j_0 Int32)
+['i','i_0','j','j_0']

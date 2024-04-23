@@ -5,6 +5,9 @@ insert into x values (1, 2);
 select toTypeName(tuple(i, j)) from x;
 select tupleNames(tuple(i, j)) from x;
 
+select toTypeName(tuple(i, i, j, j)) from x;
+select tupleNames(tuple(i, i, j, j)) from x;
+
 select tupleNames(1); -- { serverError 43 }
 
 drop table x;

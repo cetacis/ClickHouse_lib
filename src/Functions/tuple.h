@@ -50,10 +50,21 @@ public:
 
         DataTypes types;
         Names names;
+        std::unordered_map<String, size_t> tuple_column_names_map;
         for (const auto & argument : arguments)
         {
             types.emplace_back(argument.type);
-            names.emplace_back(argument.name);
+
+            auto it = tuple_column_names_map.find(argument.name);
+            if (it == tuple_column_names_map.end())
+            {
+                tuple_column_names_map.emplace(argument.name, 0uz);
+                names.emplace_back(argument.name);
+            }
+            else
+            {
+                names.emplace_back(fmt::format("{}_{}", argument.name, it->second++));
+            }
         }
 
         return std::make_shared<DataTypeTuple>(types, names);
