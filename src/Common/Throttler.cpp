@@ -28,8 +28,8 @@ Throttler::Throttler(size_t max_speed_, const std::shared_ptr<Throttler> & paren
     , parent(parent_)
 {}
 
-Throttler::Throttler(size_t max_speed_, size_t limit_, const char * limit_exceeded_exception_message_,
-            const std::shared_ptr<Throttler> & parent_)
+Throttler::Throttler(
+    size_t max_speed_, size_t limit_, const char * limit_exceeded_exception_message_, const std::shared_ptr<Throttler> & parent_)
     : max_speed(max_speed_)
     , max_burst(max_speed_ * default_burst_seconds)
     , limit(limit_)
@@ -38,7 +38,7 @@ Throttler::Throttler(size_t max_speed_, size_t limit_, const char * limit_exceed
     , parent(parent_)
 {}
 
-UInt64 Throttler::add(size_t amount)
+UInt64 Throttler::addImpl(size_t amount)
 {
     // Values obtained under lock to be checked after release
     size_t count_value;
@@ -58,23 +58,30 @@ UInt64 Throttler::add(size_t amount)
     }
 
     if (limit && count_value > limit)
-        throw Exception::createDeprecated(limit_exceeded_exception_message + std::string(" Maximum: ") + toString(limit), ErrorCodes::LIMIT_EXCEEDED);
+        throw Exception(ErrorCodes::LIMIT_EXCEEDED, "{} Maximum: {}", limit_exceeded_exception_message, limit);
 
-    /// Wait unless there is positive amount of tokens - throttling
-    Int64 sleep_time_ns = 0;
+    /// Determine the wait time when there are positive number of tokens available in all throttlers.
+    UInt64 sleep_time_ns = 0;
     if (max_speed && tokens_value < 0)
-    {
         sleep_time_ns = static_cast<Int64>(-tokens_value / max_speed * NS);
+
+    if (parent)
+        sleep_time_ns = std::max(sleep_time_ns, parent->add(amount));
+
+    return sleep_time_ns;
+}
+
+UInt64 Throttler::add(size_t amount)
+{
+    auto sleep_time_ns = addImpl(amount);
+    if (sleep_time_ns > 0)
+    {
         accumulated_sleep += sleep_time_ns;
         sleepForNanoseconds(sleep_time_ns);
         accumulated_sleep -= sleep_time_ns;
         ProfileEvents::increment(ProfileEvents::ThrottlerSleepMicroseconds, sleep_time_ns / 1000UL);
     }
-
-    if (parent)
-        sleep_time_ns += parent->add(amount);
-
-    return static_cast<UInt64>(sleep_time_ns);
+    return sleep_time_ns;
 }
 
 void Throttler::reset()
@@ -91,9 +98,6 @@ bool Throttler::isThrottling() const
 {
     if (accumulated_sleep != 0)
         return true;
-
-    if (parent)
-        return parent->isThrottling();
 
     return false;
 }

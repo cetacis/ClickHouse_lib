@@ -58,6 +58,8 @@ public:
     bool isThrottling() const;
 
 private:
+    UInt64 addImpl(size_t amount);
+
     size_t count{0};
     const size_t max_speed{0}; /// in tokens per second.
     const size_t max_burst{0}; /// in tokens.
