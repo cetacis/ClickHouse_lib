@@ -94,7 +94,8 @@ public:
         Poco::Logger * log,
         Block block,
         const ProjectionDescription & projection,
-        IMergeTreeDataPart * parent_part);
+        IMergeTreeDataPart * parent_part,
+        bool merge_is_needed);
 
     /// For mutation: MATERIALIZE PROJECTION.
     static TemporaryPart writeTempProjectionPart(
@@ -128,7 +129,8 @@ private:
         const MergeTreeData & data,
         Poco::Logger * log,
         Block block,
-        const ProjectionDescription & projection);
+        const ProjectionDescription & projection,
+        bool merge_is_needed);
 
     MergeTreeData & data;
     Poco::Logger * log;
