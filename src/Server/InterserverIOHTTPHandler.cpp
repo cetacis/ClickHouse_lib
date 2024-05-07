@@ -135,6 +135,8 @@ void InterserverIOHTTPHandler::handleRequest(HTTPServerRequest & request, HTTPSe
             return;
         }
 
+        e.addMessage(fmt::format("From {}", request.clientAddress().toString()));
+
         response.setStatusAndReason(Poco::Net::HTTPResponse::HTTP_INTERNAL_SERVER_ERROR);
 
         /// Sending to remote server was cancelled due to server shutdown or drop table.
