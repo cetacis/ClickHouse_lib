@@ -224,6 +224,7 @@ void setIndexValidator(const IndexDescription & index, bool attach);
 
 MergeTreeIndexPtr bloomFilterIndexCreator(const IndexDescription & index);
 void bloomFilterIndexValidator(const IndexDescription & index, bool attach);
+MergeTreeIndexPtr tokenBloomFilterIndexCreator(const IndexDescription & index);
 
 MergeTreeIndexPtr bloomFilterIndexCreatorNew(const IndexDescription & index);
 void bloomFilterIndexValidatorNew(const IndexDescription & index, bool attach);

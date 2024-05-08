@@ -20,6 +20,7 @@
 
 #include <Poco/Logger.h>
 
+#include <Interpreters/BloomFilterHash.h>
 
 namespace DB
 {
@@ -726,6 +727,24 @@ MergeTreeIndexPtr bloomFilterIndexCreator(
     {
         throw Exception(ErrorCodes::LOGICAL_ERROR, "Unknown index type: {}", backQuote(index.name));
     }
+}
+
+MergeTreeIndexPtr tokenBloomFilterIndexCreator(const IndexDescription & index)
+{
+    double max_conflict_probability = 0.025;
+
+    if (!index.arguments.empty())
+    {
+        const auto & argument = index.arguments[0];
+        max_conflict_probability = std::min<Float64>(1.0, std::max<Float64>(argument.safeGet<Float64>(), 0.0));
+    }
+
+    const auto & bits_per_row_and_size_of_hash_functions = BloomFilterHash::calculationBestPractices(max_conflict_probability);
+
+    BloomFilterParameters params(bits_per_row_and_size_of_hash_functions.first, bits_per_row_and_size_of_hash_functions.second, 0);
+
+    auto tokenizer = std::make_unique<SplitTokenExtractor>();
+    return std::make_shared<MergeTreeIndexFullText>(index, params, std::move(tokenizer));
 }
 
 void bloomFilterIndexValidator(const IndexDescription & index, bool /*attach*/)

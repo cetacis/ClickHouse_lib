@@ -124,6 +124,9 @@ MergeTreeIndexFactory::MergeTreeIndexFactory()
     registerCreator("bloom_filter", bloomFilterIndexCreatorNew);
     registerValidator("bloom_filter", bloomFilterIndexValidatorNew);
 
+    registerCreator("token_bloom_filter", tokenBloomFilterIndexCreator);
+    registerValidator("token_bloom_filter", bloomFilterIndexValidatorNew);
+
     registerCreator("hypothesis", hypothesisIndexCreator);
     registerValidator("hypothesis", hypothesisIndexValidator);
 
