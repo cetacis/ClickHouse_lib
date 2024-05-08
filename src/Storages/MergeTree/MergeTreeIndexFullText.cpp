@@ -100,10 +100,16 @@ void MergeTreeIndexAggregatorFullText::update(const Block & block, size_t * pos,
     for (size_t col = 0; col < index_columns.size(); ++col)
     {
         const auto & column_with_type = block.getByName(index_columns[col]);
-        const auto & column = column_with_type.column;
+        ColumnPtr column;
+        if (const ColumnNullable * column_nullable = typeid_cast<const ColumnNullable *>(column_with_type.column.get()))
+            column = column_nullable->getNestedColumnPtr();
+        else
+            column = column_with_type.column;
+        auto type = removeNullable(column_with_type.type);
+
         size_t current_position = *pos;
 
-        if (isArray(column_with_type.type))
+        if (isArray(type))
         {
             const auto & column_array = assert_cast<const ColumnArray &>(*column);
             const auto & column_offsets = column_array.getOffsets();
