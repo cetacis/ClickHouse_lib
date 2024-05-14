@@ -29,6 +29,8 @@
 #include <skim.h>
 #endif
 
+#include <Common/ShellCommand.h>
+
 namespace
 {
 
@@ -445,6 +447,20 @@ ReplxxLineReader::ReplxxLineReader(
 
     rx.bind_key(Replxx::KEY::control('R'), interactive_history_search);
 #endif
+
+    const char * atuin = getenv("USE_ATUIN_CLICKHOUSE"); // NOLINT(concurrency-mt-unsafe)
+    if (atuin != nullptr)
+    {
+        auto atuin_history_search = [this, atuin](char32_t code)
+        {
+            auto ret = rx.invoke(Replxx::ACTION::REPAINT, code);
+            auto sh = ShellCommand::execute(fmt::format("{} search", atuin));
+            sh->tryWait();
+            return ret;
+        };
+
+        rx.bind_key(Replxx::KEY::control('R'), atuin_history_search);
+    }
 
     /// Rebind regular incremental search to C-T.
     ///

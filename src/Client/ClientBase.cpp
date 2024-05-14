@@ -80,6 +80,9 @@
 #include <Common/config_version.h>
 #include "config.h"
 
+#include <IO/ReadHelpers.h>
+#include <IO/copyData.h>
+
 namespace fs = std::filesystem;
 using namespace std::literals;
 
@@ -2463,6 +2466,9 @@ void ClientBase::runInteractive()
 
     String last_input;
 
+    const char * atuin = getenv("USE_ATUIN_CLICKHOUSE"); // NOLINT(concurrency-mt-unsafe)
+    String atuin_id;
+
     do
     {
         String input;
@@ -2479,6 +2485,18 @@ void ClientBase::runInteractive()
 
         if (input.empty())
             break;
+
+        if (atuin != nullptr)
+        {
+            ShellCommand::Config command_config(atuin);
+            command_config.arguments = {"history", "start", input};
+            auto sh = ShellCommand::executeDirect(command_config);
+            sh->in.close();
+            readString(atuin_id, sh->out);
+            WriteBufferFromFileDescriptor std_err(STDERR_FILENO);
+            copyData(sh->err, std_err);
+            sh->tryWait();
+        }
 
         has_vertical_output_suffix = false;
         if (input.ends_with("\\G") || input.ends_with("\\G;"))
@@ -2525,10 +2543,25 @@ void ClientBase::runInteractive()
             suggest->load(*connection, connection_parameters.timeouts, config().getInt("suggestion_limit"));
         }
 
+        Stopwatch watch;
         try
         {
-            if (!processQueryText(input))
+            bool cont = processQueryText(input);
+            if (!cont)
+            {
+                if (atuin != nullptr)
+                {
+                    ShellCommand::Config command_config(atuin);
+                    command_config.arguments
+                        = {"history", "end", fmt::format("--exit={}", 0), fmt::format("--duration={}", watch.elapsed()), atuin_id};
+                    auto sh = ShellCommand::executeDirect(command_config);
+                    sh->in.close();
+                    WriteBufferFromFileDescriptor std_err(STDERR_FILENO);
+                    copyData(sh->err, std_err);
+                    sh->tryWait();
+                }
                 break;
+            }
             last_input = input;
         }
         catch (const Exception & e)
@@ -2536,6 +2569,22 @@ void ClientBase::runInteractive()
             /// We don't need to handle the test hints in the interactive mode.
             std::cerr << "Exception on client:" << std::endl << getExceptionMessage(e, print_stack_trace, true) << std::endl << std::endl;
             client_exception.reset(e.clone());
+        }
+
+        if (atuin != nullptr)
+        {
+            ShellCommand::Config command_config(atuin);
+            command_config.arguments
+                = {"history",
+                   "end",
+                   fmt::format("--exit={}", client_exception ? client_exception->code() : 0),
+                   fmt::format("--duration={}", watch.elapsed()),
+                   atuin_id};
+            auto sh = ShellCommand::executeDirect(command_config);
+            sh->in.close();
+            WriteBufferFromFileDescriptor std_err(STDERR_FILENO);
+            copyData(sh->err, std_err);
+            sh->tryWait();
         }
 
         if (client_exception)
