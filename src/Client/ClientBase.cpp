@@ -2486,7 +2486,7 @@ void ClientBase::runInteractive()
         if (input.empty())
             break;
 
-        if (atuin != nullptr)
+        if (atuin && atuin[0])
         {
             ShellCommand::Config command_config(atuin);
             command_config.arguments = {"history", "start", input};
@@ -2549,7 +2549,7 @@ void ClientBase::runInteractive()
             bool cont = processQueryText(input);
             if (!cont)
             {
-                if (atuin != nullptr)
+                if (atuin && atuin[0])
                 {
                     ShellCommand::Config command_config(atuin);
                     command_config.arguments
@@ -2571,7 +2571,7 @@ void ClientBase::runInteractive()
             client_exception.reset(e.clone());
         }
 
-        if (atuin != nullptr)
+        if (atuin && atuin[0])
         {
             ShellCommand::Config command_config(atuin);
             command_config.arguments
