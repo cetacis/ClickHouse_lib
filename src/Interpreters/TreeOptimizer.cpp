@@ -19,6 +19,7 @@
 #include <Interpreters/ConvertStringsToEnumVisitor.h>
 #include <Interpreters/ConvertFunctionOrLikeVisitor.h>
 #include <Interpreters/RewriteFunctionToSubcolumnVisitor.h>
+#include <Interpreters/RewriteLikeToStartsWithOrEndsWith.h>
 #include <Interpreters/Context.h>
 #include <Interpreters/ExternalDictionariesLoader.h>
 #include <Interpreters/GatherFunctionQuantileVisitor.h>
@@ -662,6 +663,12 @@ void optimizeFunctionsToSubcolumns(ASTPtr & query, const StorageMetadataPtr & me
     RewriteFunctionToSubcolumnVisitor(data).visit(query);
 }
 
+void optimizeLikeToPrefixOrSuffix(ASTPtr & query)
+{
+    RewriteLikeToStartsWithOrEndsWithVisitor::Data data;
+    RewriteLikeToStartsWithOrEndsWithVisitor(data).visit(query);
+}
+
 void optimizeOrLikeChain(ASTPtr & query)
 {
     ConvertFunctionOrLikeVisitor::Data data = {};
@@ -728,6 +735,8 @@ void TreeOptimizer::apply(ASTPtr & query, TreeRewriterResult & result,
 
     if (settings.optimize_functions_to_subcolumns && result.storage_snapshot && result.storage->supportsSubcolumns())
         optimizeFunctionsToSubcolumns(query, result.storage_snapshot->metadata);
+
+    optimizeLikeToPrefixOrSuffix(query);
 
     /// Move arithmetic operations out of aggregation functions
     if (settings.optimize_arithmetic_operations_in_aggregate_functions)
