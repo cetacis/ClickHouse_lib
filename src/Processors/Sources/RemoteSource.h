@@ -13,7 +13,7 @@ class RemoteQueryExecutor;
 using RemoteQueryExecutorPtr = std::shared_ptr<RemoteQueryExecutor>;
 
 /// Source from RemoteQueryExecutor. Executes remote query and returns query result chunks.
-class RemoteSource final : public ISource
+class RemoteSource : public ISource
 {
 public:
     /// Flag add_aggregation_info tells if AggregatedChunkInfo should be added to result chunk.
