@@ -2,6 +2,7 @@
 #include <Common/logger_useful.h>
 #include <Common/typeid_cast.h>
 #include <Common/formatReadable.h>
+#include <Columns/ColumnSparse.h>
 #include <IO/WriteHelpers.h>
 #include <iomanip>
 
@@ -17,9 +18,10 @@ namespace ErrorCodes
 }
 
 ColumnGathererStream::ColumnGathererStream(
-    size_t num_inputs, ReadBuffer & row_sources_buf_, size_t block_preferred_size_)
+    size_t num_inputs, ReadBuffer & row_sources_buf_, size_t block_preferred_size_, bool is_result_sparse_)
     : sources(num_inputs), row_sources_buf(row_sources_buf_)
     , block_preferred_size(block_preferred_size_)
+    , is_result_sparse(is_result_sparse_)
 {
     if (num_inputs == 0)
         throw Exception(ErrorCodes::EMPTY_DATA_PASSED, "There are no streams to gather");
@@ -29,13 +31,19 @@ void ColumnGathererStream::initialize(Inputs inputs)
 {
     for (size_t i = 0; i < inputs.size(); ++i)
     {
-        if (inputs[i].chunk)
-        {
-            sources[i].update(inputs[i].chunk.detachColumns().at(0));
-            if (!result_column)
-                result_column = sources[i].column->cloneEmpty();
-        }
+        if (!inputs[i].chunk)
+            continue;
+
+        if (!is_result_sparse)
+            convertToFullIfSparse(inputs[i].chunk);
+
+        sources[i].update(inputs[i].chunk.detachColumns().at(0));
+        if (!result_column)
+            result_column = sources[i].column->cloneEmpty();
     }
+
+    if (is_result_sparse && !result_column->isSparse())
+        result_column = ColumnSparse::create(std::move(result_column));
 }
 
 IMergingAlgorithm::Status ColumnGathererStream::merge()
@@ -112,7 +120,12 @@ void ColumnGathererStream::consume(Input & input, size_t source_num)
 {
     auto & source = sources[source_num];
     if (input.chunk)
+    {
+        if (!is_result_sparse)
+            convertToFullIfSparse(input.chunk);
+
         source.update(input.chunk.getColumns().at(0));
+    }
 
     if (0 == source.size)
     {
@@ -124,10 +137,11 @@ ColumnGathererTransform::ColumnGathererTransform(
     const Block & header,
     size_t num_inputs,
     ReadBuffer & row_sources_buf_,
-    size_t block_preferred_size_)
+    size_t block_preferred_size_,
+    bool is_result_sparse_)
     : IMergingTransform<ColumnGathererStream>(
         num_inputs, header, header, /*have_all_inputs_=*/ true, /*limit_hint_=*/ 0, /*always_read_till_end_=*/ false,
-        num_inputs, row_sources_buf_, block_preferred_size_)
+        num_inputs, row_sources_buf_, block_preferred_size_, is_result_sparse_)
     , log(&Poco::Logger::get("ColumnGathererStream"))
 {
     if (header.columns() != 1)

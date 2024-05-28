@@ -597,10 +597,19 @@ void MergeTask::VerticalMergeStage::prepareVerticalMergeForOneColumn() const
         prev_rows += global_ctx->future_part->parts[part_num]->rows_count;
     }
 
-    auto pipe = Pipe::unitePipes(std::move(pipes));
+    bool is_result_sparse = global_ctx->new_data_part->getSerialization(column_name)->getKind() == ISerialization::Kind::SPARSE;
 
+    auto pipe = Pipe::unitePipes(std::move(pipes));
     ctx->rows_sources_read_buf->seek(0, 0);
-    auto transform = std::make_unique<ColumnGathererTransform>(pipe.getHeader(), pipe.numOutputPorts(), *ctx->rows_sources_read_buf);
+
+    const auto data_settings = global_ctx->data->getSettings();
+    auto transform = std::make_unique<ColumnGathererTransform>(
+        pipe.getHeader(),
+        pipe.numOutputPorts(),
+        *ctx->rows_sources_read_buf,
+        data_settings->merge_max_block_size,
+        is_result_sparse);
+
     pipe.addTransform(std::move(transform));
 
     ctx->column_parts_pipeline = QueryPipeline(std::move(pipe));

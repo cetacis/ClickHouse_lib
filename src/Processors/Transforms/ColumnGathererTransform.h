@@ -57,7 +57,7 @@ using MergedRowSources = PODArray<RowSourcePart>;
 class ColumnGathererStream final : public IMergingAlgorithm
 {
 public:
-    ColumnGathererStream(size_t num_inputs, ReadBuffer & row_sources_buf_, size_t block_preferred_size_ = DEFAULT_BLOCK_SIZE);
+    ColumnGathererStream(size_t num_inputs, ReadBuffer & row_sources_buf_, size_t block_preferred_size_, bool is_result_sparse_);
 
     const char * getName() const override { return "ColumnGathererStream"; }
     void initialize(Inputs inputs) override;
@@ -93,6 +93,7 @@ private:
     ReadBuffer & row_sources_buf;
 
     const size_t block_preferred_size;
+    const bool is_result_sparse;
 
     Source * source_to_fully_copy = nullptr;
 
@@ -110,7 +111,8 @@ public:
         const Block & header,
         size_t num_inputs,
         ReadBuffer & row_sources_buf_,
-        size_t block_preferred_size_ = DEFAULT_BLOCK_SIZE);
+        size_t block_preferred_size_,
+        bool is_result_sparse_);
 
     String getName() const override { return "ColumnGathererTransform"; }
 
