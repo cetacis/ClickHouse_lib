@@ -130,6 +130,28 @@ StorageMergeTree::StorageMergeTree(
     loadDeduplicationLog();
 }
 
+StorageMergeTree::StorageMergeTree(
+    const StorageID & table_id_,
+    const StorageInMemoryMetadata & metadata_,
+    bool attach,
+    ContextMutablePtr context_,
+    const String & date_column_name,
+    const MergingParams & merging_params_,
+    std::unique_ptr<MergeTreeSettings> storage_settings_)
+    : MergeTreeData(
+        table_id_,
+        metadata_,
+        context_,
+        date_column_name,
+        merging_params_,
+        std::move(storage_settings_),
+        false,      /// require_part_metadata
+        attach)
+    , reader(*this)
+    , writer(*this)
+    , merger_mutator(*this)
+{
+}
 
 void StorageMergeTree::startup()
 {
