@@ -82,9 +82,13 @@ static inline auto createHandlersFactoryFromConfig(
 static inline HTTPRequestHandlerFactoryPtr
 createHTTPHandlerFactory(IServer & server, const Poco::Util::AbstractConfiguration & config, const std::string & name, AsynchronousMetrics & async_metrics)
 {
-    if (config.has("http_handlers"))
+    const char * http_handlers_config = "http_handlers";
+    if (name == "HTTPHandler-factory-alt" || name == "HTTPSHandler-factory-alt")
+        http_handlers_config = "http_handlers_alt";
+
+    if (config.has(http_handlers_config))
     {
-        return createHandlersFactoryFromConfig(server, config, name, "http_handlers", async_metrics);
+        return createHandlersFactoryFromConfig(server, config, name, http_handlers_config, async_metrics);
     }
     else
     {
@@ -108,7 +112,7 @@ static inline HTTPRequestHandlerFactoryPtr createInterserverHTTPHandlerFactory(I
 
 HTTPRequestHandlerFactoryPtr createHandlerFactory(IServer & server, const Poco::Util::AbstractConfiguration & config, AsynchronousMetrics & async_metrics, const std::string & name)
 {
-    if (name == "HTTPHandler-factory" || name == "HTTPSHandler-factory")
+    if (startsWith(name, "HTTPHandler-factory") || startsWith(name, "HTTPSHandler-factory"))
         return createHTTPHandlerFactory(server, config, name, async_metrics);
     else if (name == "InterserverIOHTTPHandler-factory" || name == "InterserverIOHTTPSHandler-factory")
         return createInterserverHTTPHandlerFactory(server, name);

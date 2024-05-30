@@ -2207,6 +2207,23 @@ void Server::createServers(
                     std::make_unique<HTTPServer>(
                         httpContext(), createHandlerFactory(*this, config, async_metrics, "HTTPHandler-factory"), server_pool, socket, http_params));
             });
+
+            /// HTTP-ALT
+            port_name = "http_port_alt";
+            createServer(config, listen_host, port_name, listen_try, start_servers, servers, [&](UInt16 port) -> ProtocolServerAdapter
+            {
+                Poco::Net::ServerSocket socket;
+                auto address = socketBindListen(config, socket, listen_host, port);
+                socket.setReceiveTimeout(settings.http_receive_timeout);
+                socket.setSendTimeout(settings.http_send_timeout);
+
+                return ProtocolServerAdapter(
+                    listen_host,
+                    port_name,
+                    "http://" + address.toString(),
+                    std::make_unique<HTTPServer>(
+                        httpContext(), createHandlerFactory(*this, config, async_metrics, "HTTPHandler-factory-alt"), server_pool, socket, http_params));
+            });
         }
 
         if (server_type.shouldStart(ServerType::Type::HTTPS))
