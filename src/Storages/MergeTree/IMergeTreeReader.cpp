@@ -7,6 +7,9 @@
 #include <Interpreters/inplaceBlockConversions.h>
 #include <Interpreters/Context.h>
 
+#include <Interpreters/ExpressionAnalyzer.h>
+#include <Parsers/ASTFunction.h>
+#include <Parsers/ASTIdentifier.h>
 
 namespace DB
 {
@@ -188,12 +191,36 @@ void IMergeTreeReader::performRequiredConversions(Columns & res_columns) const
         Block copy_block;
         auto name_and_type = requested_columns.begin();
 
+        ASTPtr array_expr_list = std::make_shared<ASTExpressionList>();
         for (size_t pos = 0; pos < num_columns; ++pos, ++name_and_type)
         {
             if (res_columns[pos] == nullptr)
                 continue;
 
+            auto type_in_part = getColumnInPart(*name_and_type).type;
+            if (const auto * array = typeid_cast<const DataTypeArray *>(name_and_type->type.get()))
+            {
+                if (array->getNestedType()->equals(*type_in_part))
+                {
+                    auto array_func = makeASTFunction("array", std::make_shared<ASTIdentifier>(name_and_type->name));
+                    array_expr_list->children.emplace_back(setAlias(array_func, name_and_type->name));
+                }
+            }
+
             copy_block.insert({res_columns[pos], getColumnInPart(*name_and_type).type, name_and_type->name});
+        }
+
+        if (!array_expr_list->children.empty())
+        {
+            auto syntax_result
+                = TreeRewriter(data_part_info_for_read->getContext()).analyze(array_expr_list, copy_block.getNamesAndTypesList());
+            auto expression_analyzer = ExpressionAnalyzer{array_expr_list, syntax_result, data_part_info_for_read->getContext()};
+            auto dag = std::make_shared<ActionsDAG>(copy_block.getNamesAndTypesList());
+            auto actions = expression_analyzer.getActionsDAG(true, false);
+            dag = ActionsDAG::merge(std::move(*dag), std::move(*actions));
+            auto expression = std::make_shared<ExpressionActions>(
+                std::move(dag), ExpressionActionsSettings::fromContext(data_part_info_for_read->getContext()));
+            expression->execute(copy_block);
         }
 
         DB::performRequiredConversions(copy_block, requested_columns, data_part_info_for_read->getContext());
