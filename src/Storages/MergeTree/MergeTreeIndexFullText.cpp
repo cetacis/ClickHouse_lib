@@ -572,7 +572,7 @@ bool MergeTreeConditionFullText::traverseTreeEquals(
         out.function = RPNElement::FUNCTION_EQUALS;
         out.bloom_filter = std::make_unique<BloomFilter>(params);
         const auto & value = const_value.get<String>();
-        token_extractor->stringToBloomFilter(value.data(), value.size(), *out.bloom_filter);
+        token_extractor->stringStartsWithToBloomFilter(value.data(), value.size(), *out.bloom_filter);
         return true;
     }
     else if (function_name == "endsWith")
@@ -581,7 +581,7 @@ bool MergeTreeConditionFullText::traverseTreeEquals(
         out.function = RPNElement::FUNCTION_EQUALS;
         out.bloom_filter = std::make_unique<BloomFilter>(params);
         const auto & value = const_value.get<String>();
-        token_extractor->stringToBloomFilter(value.data(), value.size(), *out.bloom_filter);
+        token_extractor->stringEndsWithToBloomFilter(value.data(), value.size(), *out.bloom_filter);
         return true;
     }
     else if (function_name == "multiSearchAny"

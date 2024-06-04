@@ -37,6 +37,14 @@ struct ITokenExtractor
 
     virtual void stringLikeToBloomFilter(const char * data, size_t length, BloomFilter & bloom_filter) const = 0;
 
+    /// Special implementation for creating bloom filter for startsWith function.
+    /// It ignores the last token.
+    virtual void stringStartsWithToBloomFilter(const char * data, size_t length, BloomFilter & bloom_filter) const = 0;
+
+    /// Special implementation for creating bloom filter for endsWith function.
+    /// It ignores the first token.
+    virtual void stringEndsWithToBloomFilter(const char * data, size_t length, BloomFilter & bloom_filter) const = 0;
+
     virtual void stringToGinFilter(const char * data, size_t length, GinFilter & gin_filter) const = 0;
 
     virtual void stringPaddedToGinFilter(const char * data, size_t length, GinFilter & gin_filter) const
@@ -80,6 +88,39 @@ class ITokenExtractorHelper : public ITokenExtractor
 
         while (cur < length && static_cast<const Derived *>(this)->nextInStringLike(data, length, &cur, token))
             bloom_filter.add(token.c_str(), token.size());
+    }
+
+    void stringStartsWithToBloomFilter(const char * data, size_t length, BloomFilter & bloom_filter) const override
+    {
+        size_t cur = 0;
+        size_t token_start = 0, prev_token_start = 0;
+        size_t token_len = 0, prev_token_len = 0;
+
+        while (cur < length && static_cast<const Derived *>(this)->nextInString(data, length, &cur, &token_start, &token_len))
+        {
+            if (prev_token_len > 0)
+            {
+                bloom_filter.add(data + prev_token_start, prev_token_len);
+            }
+            prev_token_start = token_start;
+            prev_token_len = token_len;
+        }
+    }
+
+    void stringEndsWithToBloomFilter(const char * data, size_t length, BloomFilter & bloom_filter) const override
+    {
+        size_t cur = 0;
+        size_t token_start = 0;
+        size_t token_len = 0;
+        bool first_token = true;
+
+        while (cur < length && static_cast<const Derived *>(this)->nextInString(data, length, &cur, &token_start, &token_len))
+        {
+            if (!first_token)
+                bloom_filter.add(data + token_start, token_len);
+            else
+                first_token = false;
+        }
     }
 
     void stringToGinFilter(const char * data, size_t length, GinFilter & gin_filter) const override
