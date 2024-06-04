@@ -1,6 +1,7 @@
 #include <Storages/MergeTree/IMergeTreeReader.h>
 #include <DataTypes/NestedUtils.h>
 #include <DataTypes/DataTypeArray.h>
+#include <DataTypes/DataTypeNullable.h>
 #include <Common/escapeForFileName.h>
 #include <Compression/CachedCompressedReadBuffer.h>
 #include <Columns/ColumnArray.h>
@@ -198,11 +199,25 @@ void IMergeTreeReader::performRequiredConversions(Columns & res_columns) const
                 continue;
 
             auto type_in_part = getColumnInPart(*name_and_type).type;
+            bool is_nullable = false;
+            if (const auto * nullable = typeid_cast<const DataTypeNullable *>(type_in_part.get()))
+            {
+                type_in_part = nullable->getNestedType();
+                is_nullable = true;
+            }
+
             if (const auto * array = typeid_cast<const DataTypeArray *>(name_and_type->type.get()))
             {
                 if (array->getNestedType()->equals(*type_in_part))
                 {
-                    auto array_func = makeASTFunction("array", std::make_shared<ASTIdentifier>(name_and_type->name));
+                    auto array_func = is_nullable
+                        ? makeASTFunction(
+                              "if",
+                              makeASTFunction("isNull", std::make_shared<ASTIdentifier>(name_and_type->name)),
+                              makeASTFunction("array"),
+                              makeASTFunction(
+                                  "array", makeASTFunction("assumeNotNull", std::make_shared<ASTIdentifier>(name_and_type->name))))
+                        : makeASTFunction("array", std::make_shared<ASTIdentifier>(name_and_type->name));
                     array_expr_list->children.emplace_back(setAlias(array_func, name_and_type->name));
                 }
             }
