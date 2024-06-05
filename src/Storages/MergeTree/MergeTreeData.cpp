@@ -2762,8 +2762,8 @@ void MergeTreeData::dropAllData()
 
     /// Tables in atomic databases have UUID and stored in persistent locations.
     /// No need to clear caches (that are keyed by filesystem path) because collision is not possible.
-    if (!getStorageID().hasUUID())
-        getContext()->clearCaches();
+    // if (!getStorageID().hasUUID())
+    //     getContext()->clearCaches();
 
     /// Removing of each data part before recursive removal of directory is to speed-up removal, because there will be less number of syscalls.
     NameSet part_names_failed;
