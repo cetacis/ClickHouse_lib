@@ -132,7 +132,12 @@ void MergeTreeIndexAggregatorInverted::update(const Block & block, size_t * pos,
     for (size_t col = 0; col < index_columns.size(); ++col)
     {
         const auto & column_with_type = block.getByName(index_columns[col]);
-        const auto & column = column_with_type.column;
+        ColumnPtr column;
+        if (const ColumnNullable * column_nullable = typeid_cast<const ColumnNullable *>(column_with_type.column.get()))
+            column = column_nullable->getNestedColumnPtr();
+        else
+            column = column_with_type.column;
+        auto type = removeNullable(column_with_type.type);
         size_t current_position = *pos;
 
         bool need_to_write = false;
@@ -431,7 +436,7 @@ bool MergeTreeConditionInverted::traverseAtomAST(const RPNBuilderTreeNode & node
                  function_name == "mapContains" ||
                  function_name == "like" ||
                  function_name == "notLike" ||
-                 function_name == "hasToken" ||
+                 function_name.starts_with("hasToken") ||
                  function_name == "hasTokenOrNull" ||
                  function_name == "startsWith" ||
                  function_name == "endsWith" ||
@@ -579,7 +584,7 @@ bool MergeTreeConditionInverted::traverseASTEquals(
         token_extractor->stringLikeToGinFilter(value.data(), value.size(), *out.gin_filter);
         return true;
     }
-    else if (function_name == "hasToken" || function_name == "hasTokenOrNull")
+    else if (startsWith(function_name, "hasToken"))
     {
         out.key_column = key_column_num;
         out.function = RPNElement::FUNCTION_EQUALS;
@@ -761,6 +766,12 @@ void invertedIndexValidator(const IndexDescription & index, bool /*attach*/)
         {
             const auto & low_cardinality = assert_cast<const DataTypeLowCardinality &>(*index_data_type);
             data_type = WhichDataType(low_cardinality.getDictionaryType());
+        }
+
+        if (data_type.isNullable())
+        {
+            const auto & nullable = assert_cast<const DataTypeNullable &>(*index_data_type);
+            data_type = WhichDataType(nullable.getNestedType());
         }
 
         if (!data_type.isString() && !data_type.isFixedString())
