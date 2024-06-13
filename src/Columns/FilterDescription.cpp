@@ -102,9 +102,27 @@ FilterDescription::FilterDescription(const IColumn & column_)
 SparseFilterDescription::SparseFilterDescription(const IColumn & column)
 {
     const auto * column_sparse = typeid_cast<const ColumnSparse *>(&column);
-    if (!column_sparse || !typeid_cast<const ColumnUInt8 *>(&column_sparse->getValuesColumn()))
-        throw Exception(ErrorCodes::ILLEGAL_TYPE_OF_COLUMN_FOR_FILTER,
-            "Illegal type {} of column for sparse filter. Must be Sparse(UInt8)", column.getName());
+    if (!column_sparse)
+        throw Exception(
+            ErrorCodes::ILLEGAL_TYPE_OF_COLUMN_FOR_FILTER,
+            "Illegal type {} of column for sparse filter. Must be Sparse(UInt8) or Sparse(Nullable(UInt8))",
+            column.getName());
+
+    if (const auto * nullable = typeid_cast<const ColumnNullable *>(&column_sparse->getValuesColumn()))
+    {
+        if (!typeid_cast<const ColumnUInt8 *>(&nullable->getNestedColumn()))
+            throw Exception(
+                ErrorCodes::ILLEGAL_TYPE_OF_COLUMN_FOR_FILTER,
+                "Illegal type {} of column for sparse filter. Must be Sparse(UInt8) or Sparse(Nullable(UInt8))",
+                column.getName());
+    }
+    else if (!typeid_cast<const ColumnUInt8 *>(&column_sparse->getValuesColumn()))
+    {
+        throw Exception(
+            ErrorCodes::ILLEGAL_TYPE_OF_COLUMN_FOR_FILTER,
+            "Illegal type {} of column for sparse filter. Must be Sparse(UInt8) or Sparse(Nullable(UInt8))",
+            column.getName());
+    }
 
     filter_indices = &column_sparse->getOffsetsColumn();
 }
