@@ -491,9 +491,8 @@ bool MergeTreeConditionFullText::traverseTreeEquals(
         }
     }
 
-    /// TODO(amos)
     const auto lowercase_key_index = getKeyIndex(fmt::format("lower({})", column_name));
-    const auto is_has_token_case_insensitive = function_name.starts_with("hasTokenCaseInsensitive");
+    const auto is_has_token_case_insensitive = function_name.ends_with("CaseInsensitive");
     if (const auto is_case_insensitive_scenario = is_has_token_case_insensitive && lowercase_key_index;
         function_name.starts_with("hasToken") && ((!is_has_token_case_insensitive && key_index) || is_case_insensitive_scenario))
     {
