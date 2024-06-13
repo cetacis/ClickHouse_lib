@@ -70,15 +70,17 @@ static void assertIndexColumnsType(const Block & header)
 MergeTreeIndexPtr bloomFilterIndexCreatorNew(
     const IndexDescription & index)
 {
-    double max_conflict_probability = 0.025;
-
-    if (!index.arguments.empty())
+    auto bits_per_row_and_size_of_hash_functions = BloomFilterHash::calculationBestPractices(0.025);
+    if (index.arguments.size() == 1)
     {
         const auto & argument = index.arguments[0];
-        max_conflict_probability = std::min<Float64>(1.0, std::max<Float64>(argument.safeGet<Float64>(), 0.0));
+        auto max_conflict_probability = std::min<Float64>(1.0, std::max<Float64>(argument.safeGet<Float64>(), 0.0));
+        bits_per_row_and_size_of_hash_functions = BloomFilterHash::calculationBestPractices(max_conflict_probability);
     }
-
-    const auto & bits_per_row_and_size_of_hash_functions = BloomFilterHash::calculationBestPractices(max_conflict_probability);
+    else if (index.arguments.size() > 1)
+    {
+        bits_per_row_and_size_of_hash_functions = {index.arguments[0].get<size_t>(), index.arguments[1].get<size_t>()};
+    }
 
     return std::make_shared<MergeTreeIndexBloomFilter>(
         index, bits_per_row_and_size_of_hash_functions.first, bits_per_row_and_size_of_hash_functions.second);
@@ -88,18 +90,24 @@ void bloomFilterIndexValidatorNew(const IndexDescription & index, bool attach)
 {
     assertIndexColumnsType(index.sample_block);
 
-    if (index.arguments.size() > 1)
+    if (index.arguments.size() > 2)
     {
         if (!attach) /// This is for backward compatibility.
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "BloomFilter index cannot have more than one parameter.");
+            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "BloomFilter index cannot have more than two parameters");
     }
 
-    if (!index.arguments.empty())
+    if (index.arguments.size() == 1)
     {
         const auto & argument = index.arguments[0];
 
         if (!attach && (argument.getType() != Field::Types::Float64 || argument.get<Float64>() < 0 || argument.get<Float64>() > 1))
             throw Exception(ErrorCodes::BAD_ARGUMENTS, "The BloomFilter false positive must be a double number between 0 and 1.");
+    }
+    else if (index.arguments.size() == 2)
+    {
+        for (const auto & arg : index.arguments)
+        if (arg.getType() != Field::Types::UInt64)
+            throw Exception(ErrorCodes::BAD_ARGUMENTS, "All parameters to bloom_filter index must be unsigned integers");
     }
 }
 
