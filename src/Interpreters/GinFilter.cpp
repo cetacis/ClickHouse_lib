@@ -166,6 +166,15 @@ bool GinFilter::match(const GinPostingsCache & postings_cache) const
     if (hasEmptyPostingsList(postings_cache))
         return false;
 
+    if (postings_cache.size() == 1)
+    {
+        /// If there is any posting list for current segments, it is a match.
+        return std::any_of(
+            rowid_ranges.begin(),
+            rowid_ranges.end(),
+            [&postings_cache](const auto & rowid_range) { return postings_cache.begin()->second.contains(rowid_range.segment_id); });
+    }
+
     /// Check for each row ID ranges
     for (const auto & rowid_range: rowid_ranges)
         if (matchInRange(postings_cache, rowid_range.segment_id, rowid_range.range_start, rowid_range.range_end))
