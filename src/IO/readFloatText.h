@@ -160,10 +160,7 @@ ReturnType readFloatTextPreciseImpl(T & x, ReadBuffer & buf)
         if (unlikely(res.ec != std::errc()))
         {
             if constexpr (throw_exception)
-                throw ParsingException(
-                    ErrorCodes::CANNOT_PARSE_NUMBER,
-                    "Cannot read floating point value here: {}",
-                    String(initial_position, buf.buffer().end() - initial_position));
+                throw ParsingException(ErrorCodes::CANNOT_PARSE_NUMBER, "Cannot read floating point value");
             else
                 return ReturnType(false);
         }
