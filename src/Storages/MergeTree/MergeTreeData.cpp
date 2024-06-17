@@ -5915,8 +5915,8 @@ MergeTreeData::getDataPartsVectorForInternalUsage(const DataPartStates & afforda
     return getDataPartsVectorForInternalUsage(affordable_states, lock, out_states);
 }
 
-MergeTreeData::ProjectionPartsVector
-MergeTreeData::getProjectionPartsVectorForInternalUsage(const DataPartStates & affordable_states, DataPartStateVector * out_states) const
+MergeTreeData::ProjectionPartsVector MergeTreeData::getProjectionPartsVectorForInternalUsage(
+    const DataPartStates & affordable_states, DataPartStateVector * out_states, const String & projection_name) const
 {
     auto lock = lockParts();
     ProjectionPartsVector res;
@@ -5926,8 +5926,11 @@ MergeTreeData::getProjectionPartsVectorForInternalUsage(const DataPartStates & a
         for (const auto & part : range)
         {
             res.data_parts.push_back(part);
-            for (const auto & [_, projection_part] : part->getProjectionParts())
-                res.projection_parts.push_back(projection_part);
+            for (const auto & [name, projection_part] : part->getProjectionParts())
+            {
+                if (projection_name.empty() || name == projection_name)
+                    res.projection_parts.push_back(projection_part);
+            }
         }
     }
 

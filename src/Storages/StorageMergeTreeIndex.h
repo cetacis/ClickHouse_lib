@@ -10,6 +10,7 @@ namespace DB
 class StorageMergeTreeIndex final : public IStorage
 {
 public:
+    static const ColumnWithTypeAndName parent_part_name_column;
     static const ColumnWithTypeAndName part_name_column;
     static const ColumnWithTypeAndName mark_number_column;
     static const ColumnWithTypeAndName rows_in_granule_column;
@@ -19,7 +20,8 @@ public:
         const StorageID & table_id_,
         const StoragePtr & source_table_,
         const ColumnsDescription & columns,
-        bool with_marks_);
+        bool with_marks_,
+        const String & projection_name);
 
     Pipe read(
         const Names & column_names,
@@ -37,8 +39,10 @@ private:
 
     StoragePtr source_table;
     bool with_marks;
+    String projection_name;
 
     MergeTreeData::DataPartsVector data_parts;
+    MergeTreeData::DataPartsVector parent_parts;
     Block key_sample_block;
     Poco::Logger * log;
 };

@@ -41,6 +41,7 @@ private:
 
     StorageID source_table_id{StorageID::createEmpty()};
     bool with_marks = false;
+    String projection_name;
 };
 
 void TableFunctionMergeTreeIndex::parseArguments(const ASTPtr & ast_function, ContextPtr context)
@@ -64,19 +65,36 @@ void TableFunctionMergeTreeIndex::parseArguments(const ASTPtr & ast_function, Co
     if (!rest_args.empty())
     {
         auto params = getParamsMapFromAST(rest_args, context);
-        auto param = params.extract("with_marks");
 
-        if (!param.empty())
         {
-            auto & value = param.mapped();
-            if (value.getType() != Field::Types::Bool && value.getType() != Field::Types::UInt64)
-                throw Exception(ErrorCodes::BAD_ARGUMENTS,
-                    "Table function '{}' expected bool flag for 'with_marks' argument", getName());
+            auto param = params.extract("with_marks");
 
-            if (value.getType() == Field::Types::Bool)
-                with_marks = value.get<bool>();
-            else
-                with_marks = value.get<UInt64>();
+            if (!param.empty())
+            {
+                auto & value = param.mapped();
+                if (value.getType() != Field::Types::Bool && value.getType() != Field::Types::UInt64)
+                    throw Exception(ErrorCodes::BAD_ARGUMENTS,
+                                    "Table function '{}' expected bool flag for 'with_marks' argument", getName());
+
+                if (value.getType() == Field::Types::Bool)
+                    with_marks = value.get<bool>();
+                else
+                    with_marks = value.get<UInt64>();
+            }
+        }
+
+        {
+            auto param = params.extract("projection_name");
+
+            if (!param.empty())
+            {
+                auto & value = param.mapped();
+                if (value.getType() != Field::Types::String)
+                    throw Exception(ErrorCodes::BAD_ARGUMENTS,
+                                    "Table function '{}' expected string value for 'projection_name' argument", getName());
+
+                projection_name = value.get<String>();
+            }
         }
 
         if (!params.empty())
@@ -134,12 +152,27 @@ ColumnsDescription TableFunctionMergeTreeIndex::getActualTableStructure(ContextP
     auto source_table = DatabaseCatalog::instance().getTable(source_table_id, context);
     auto metadata_snapshot = source_table->getInMemoryMetadataPtr();
 
+
     ColumnsDescription columns;
+    if (!projection_name.empty())
+        columns.add({StorageMergeTreeIndex::parent_part_name_column.name, StorageMergeTreeIndex::parent_part_name_column.type});
+
     for (const auto & column : StorageMergeTreeIndex::virtuals_sample_block)
         columns.add({column.name, column.type});
 
-    for (const auto & column : metadata_snapshot->getPrimaryKey().sample_block)
-        columns.add({column.name, column.type});
+    if (projection_name.empty())
+    {
+        for (const auto & column : metadata_snapshot->getPrimaryKey().sample_block)
+            columns.add({column.name, column.type});
+    }
+    else
+    {
+        if (metadata_snapshot->getProjections().has(projection_name))
+        {
+            for (const auto & column : metadata_snapshot->getProjections().get(projection_name).sample_block_for_keys)
+                columns.add({column.name, column.type});
+        }
+    }
 
     if (with_marks)
     {
@@ -152,8 +185,27 @@ ColumnsDescription TableFunctionMergeTreeIndex::getActualTableStructure(ContextP
         if (!merge_tree)
             throw Exception(ErrorCodes::BAD_ARGUMENTS, "Table function mergeTreeIndex expected MergeTree table, got: {}", source_table->getName());
 
-        auto data_parts = merge_tree->getDataPartsVectorForInternalUsage();
-        auto columns_list = Nested::convertToSubcolumns(metadata_snapshot->getColumns().getAllPhysical());
+        MergeTreeData::DataPartsVector parent_parts;
+        MergeTreeData::DataPartsVector data_parts;
+        NamesAndTypesList columns_list;
+
+        if (projection_name.empty())
+        {
+            data_parts = merge_tree->getDataPartsVectorForInternalUsage();
+            columns_list = Nested::convertToSubcolumns(metadata_snapshot->getColumns().getAllPhysical());
+        }
+        else
+        {
+            if (metadata_snapshot->getProjections().has(projection_name))
+            {
+                columns_list = Nested::convertToSubcolumns(
+                    metadata_snapshot->getProjections().get(projection_name).metadata->getColumns().getAllPhysical());
+                auto projection_parts_vector = merge_tree->getProjectionPartsVectorForInternalUsage(
+                    {MergeTreeData::DataPartState::Active}, nullptr, projection_name);
+                parent_parts = std::move(projection_parts_vector.data_parts);
+                data_parts = std::move(projection_parts_vector.projection_parts);
+            }
+        }
 
         for (const auto & column : columns_list)
         {
@@ -181,7 +233,8 @@ StoragePtr TableFunctionMergeTreeIndex::executeImpl(
     auto columns = getActualTableStructure(context, is_insert_query);
 
     StorageID storage_id(getDatabaseName(), table_name);
-    auto res = std::make_shared<StorageMergeTreeIndex>(std::move(storage_id), std::move(source_table), std::move(columns), with_marks);
+    auto res = std::make_shared<StorageMergeTreeIndex>(
+        std::move(storage_id), std::move(source_table), std::move(columns), with_marks, projection_name);
 
     res->startup();
     return res;

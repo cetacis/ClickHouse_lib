@@ -484,9 +484,11 @@ public:
     ///  out_states will contain snapshot of each part state
     DataPartsVector getDataPartsVectorForInternalUsage(
         const DataPartStates & affordable_states, DataPartStateVector * out_states = nullptr) const;
-    /// Same as above but only returns projection parts
+
+    /// Same as above but only returns projection parts. If @projection_name is
+    /// not empty, return only the parts associated with this projection.
     ProjectionPartsVector getProjectionPartsVectorForInternalUsage(
-        const DataPartStates & affordable_states, DataPartStateVector * out_states = nullptr) const;
+        const DataPartStates & affordable_states, DataPartStateVector * out_states = nullptr, const String & projection_name = "") const;
 
 
     /// Returns absolutely all parts (and snapshot of their states)

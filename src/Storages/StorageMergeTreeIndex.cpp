@@ -62,6 +62,7 @@ protected:
         size_t num_columns = header.columns();
         size_t num_rows = index_granularity.getMarksCount();
 
+        const auto & parent_part_name_column = StorageMergeTreeIndex::parent_part_name_column;
         const auto & part_name_column = StorageMergeTreeIndex::part_name_column;
         const auto & mark_number_column = StorageMergeTreeIndex::mark_number_column;
         const auto & rows_in_granule_column = StorageMergeTreeIndex::rows_in_granule_column;
@@ -77,6 +78,11 @@ protected:
             {
                 size_t index_position = index_header.getPositionByName(column_name);
                 result_columns[pos] = index[index_position];
+            }
+            else if (column_name == parent_part_name_column.name)
+            {
+                auto column = column_type->createColumnConst(num_rows, part->getParentPartName());
+                result_columns[pos] = column->convertToFullColumnIfConst();
             }
             else if (column_name == part_name_column.name)
             {
@@ -203,6 +209,7 @@ private:
     size_t part_index = 0;
 };
 
+const ColumnWithTypeAndName StorageMergeTreeIndex::parent_part_name_column{std::make_shared<DataTypeString>(), "parent_part_name"};
 const ColumnWithTypeAndName StorageMergeTreeIndex::part_name_column{std::make_shared<DataTypeString>(), "part_name"};
 const ColumnWithTypeAndName StorageMergeTreeIndex::mark_number_column{std::make_shared<DataTypeUInt64>(), "mark_number"};
 const ColumnWithTypeAndName StorageMergeTreeIndex::rows_in_granule_column{std::make_shared<DataTypeUInt64>(), "rows_in_granule"};
@@ -212,18 +219,34 @@ StorageMergeTreeIndex::StorageMergeTreeIndex(
     const StorageID & table_id_,
     const StoragePtr & source_table_,
     const ColumnsDescription & columns,
-    bool with_marks_)
+    bool with_marks_,
+    const String & projection_name_)
     : IStorage(table_id_)
     , source_table(source_table_)
     , with_marks(with_marks_)
+    , projection_name(projection_name_)
     , log(&Poco::Logger::get("StorageMergeTreeIndex"))
 {
     const auto * merge_tree = dynamic_cast<const MergeTreeData *>(source_table.get());
     if (!merge_tree)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Storage MergeTreeIndex expected MergeTree table, got: {}", source_table->getName());
 
-    data_parts = merge_tree->getDataPartsVectorForInternalUsage();
-    key_sample_block = merge_tree->getInMemoryMetadataPtr()->getPrimaryKey().sample_block;
+    if (projection_name.empty())
+    {
+        data_parts = merge_tree->getDataPartsVectorForInternalUsage();
+        key_sample_block = merge_tree->getInMemoryMetadataPtr()->getPrimaryKey().sample_block;
+    }
+    else
+    {
+        auto projection_parts_vector
+            = merge_tree->getProjectionPartsVectorForInternalUsage({MergeTreeData::DataPartState::Active}, nullptr, projection_name);
+        parent_parts = std::move(projection_parts_vector.data_parts);
+        data_parts = std::move(projection_parts_vector.projection_parts);
+
+        auto metadata = merge_tree->getInMemoryMetadataPtr();
+        if (metadata->getProjections().has(projection_name))
+            key_sample_block = metadata->getProjections().get(projection_name).sample_block_for_keys;
+    }
 
     StorageInMemoryMetadata storage_metadata;
     storage_metadata.setColumns(columns);
@@ -239,31 +262,38 @@ Pipe StorageMergeTreeIndex::read(
     size_t /*max_block_size*/,
     size_t /*num_streams*/)
 {
-    const auto & storage_columns = source_table->getInMemoryMetadataPtr()->getColumns();
-    Names columns_from_storage;
-
-    for (const auto & column_name : column_names)
+    if (projection_name.empty())
     {
-        if (storage_columns.hasColumnOrSubcolumn(GetColumnsOptions::All, column_name))
-        {
-            columns_from_storage.push_back(column_name);
-            continue;
-        }
+        const auto & storage_columns = source_table->getInMemoryMetadataPtr()->getColumns();
+        Names columns_from_storage;
 
-        if (with_marks)
+        for (const auto & column_name : column_names)
         {
-            auto [first, second] = Nested::splitName(column_name, true);
-            auto unescaped_name = unescapeForFileName(first);
-
-            if (second == "mark" && storage_columns.hasColumnOrSubcolumn(GetColumnsOptions::All, unescapeForFileName(unescaped_name)))
+            if (storage_columns.hasColumnOrSubcolumn(GetColumnsOptions::All, column_name))
             {
-                columns_from_storage.push_back(unescaped_name);
+                columns_from_storage.push_back(column_name);
                 continue;
             }
-        }
-    }
 
-    context->checkAccess(AccessType::SELECT, source_table->getStorageID(), columns_from_storage);
+            if (with_marks)
+            {
+                auto [first, second] = Nested::splitName(column_name, true);
+                auto unescaped_name = unescapeForFileName(first);
+
+                if (second == "mark" && storage_columns.hasColumnOrSubcolumn(GetColumnsOptions::All, unescapeForFileName(unescaped_name)))
+                {
+                    columns_from_storage.push_back(unescaped_name);
+                    continue;
+                }
+            }
+        }
+
+        context->checkAccess(AccessType::SELECT, source_table->getStorageID(), columns_from_storage);
+    }
+    else
+    {
+        context->checkAccess(AccessType::SELECT, source_table->getStorageID());
+    }
 
     auto header = storage_snapshot->getSampleBlockForColumns(column_names);
     auto filtered_parts = getFilteredDataParts(query_info, context);
