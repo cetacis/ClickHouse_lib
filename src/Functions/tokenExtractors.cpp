@@ -4,6 +4,8 @@
 #include <Columns/ColumnString.h>
 #include <Columns/ColumnFixedString.h>
 #include <Columns/ColumnArray.h>
+#include <Columns/ColumnNullable.h>
+#include <Columns/ColumnsNumber.h>
 #include <Interpreters/Context_fwd.h>
 #include <Interpreters/ITokenExtractor.h>
 #include <Functions/IFunction.h>
@@ -43,14 +45,14 @@ public:
     bool isVariadic() const override { return false; }
     ColumnNumbers getArgumentsThatAreAlwaysConstant() const override { return strategy == ngrams ? ColumnNumbers{1} : ColumnNumbers{}; }
 
-    bool useDefaultImplementationForNulls() const override { return true; }
+    bool useDefaultImplementationForNulls() const override { return false; }
     bool useDefaultImplementationForConstants() const override { return true; }
     bool useDefaultImplementationForLowCardinalityColumns() const override { return true; }
     bool isSuitableForShortCircuitArgumentsExecution(const DataTypesWithConstInfo & /*arguments*/) const override { return true; }
 
     DataTypePtr getReturnTypeImpl(const ColumnsWithTypeAndName & arguments) const override
     {
-        auto ngram_input_argument_type = WhichDataType(arguments[0].type);
+        auto ngram_input_argument_type = WhichDataType(removeNullable(arguments[0].type));
         if (!ngram_input_argument_type.isStringOrFixedString())
             throw Exception(ErrorCodes::BAD_ARGUMENTS,
                 "Function {} first argument type should be String or FixedString. Actual {}",
@@ -76,6 +78,14 @@ public:
     ColumnPtr executeImpl(const ColumnsWithTypeAndName & arguments, const DataTypePtr &, size_t) const override
     {
         auto column_offsets = ColumnArray::ColumnOffsets::create();
+        auto input_column = arguments[0].column;
+        const ColumnUInt8::Container * null_map = nullptr;
+
+        if (const auto * nullable = checkAndGetColumn<ColumnNullable>(input_column.get()))
+        {
+            null_map = &nullable->getNullMapData();
+            input_column = nullable->getNestedColumnPtr();
+        }
 
         if constexpr (strategy == TokenExtractorStrategy::ngrams)
         {
@@ -87,12 +97,11 @@ public:
 
             auto result_column_string = ColumnString::create();
 
-            auto input_column = arguments[0].column;
 
             if (const auto * column_string = checkAndGetColumn<ColumnString>(input_column.get()))
-                executeImpl(extractor, *column_string, *result_column_string, *column_offsets);
+                executeImpl(extractor, *column_string, *result_column_string, *column_offsets, null_map);
             else if (const auto * column_fixed_string = checkAndGetColumn<ColumnFixedString>(input_column.get()))
-                executeImpl(extractor, *column_fixed_string, *result_column_string, *column_offsets);
+                executeImpl(extractor, *column_fixed_string, *result_column_string, *column_offsets, null_map);
 
             return ColumnArray::create(std::move(result_column_string), std::move(column_offsets));
         }
@@ -102,12 +111,10 @@ public:
 
             auto result_column_string = ColumnString::create();
 
-            auto input_column = arguments[0].column;
-
             if (const auto * column_string = checkAndGetColumn<ColumnString>(input_column.get()))
-                executeImpl(extractor, *column_string, *result_column_string, *column_offsets);
+                executeImpl(extractor, *column_string, *result_column_string, *column_offsets, null_map);
             else if (const auto * column_fixed_string = checkAndGetColumn<ColumnFixedString>(input_column.get()))
-                executeImpl(extractor, *column_fixed_string, *result_column_string, *column_offsets);
+                executeImpl(extractor, *column_fixed_string, *result_column_string, *column_offsets, null_map);
 
             return ColumnArray::create(std::move(result_column_string), std::move(column_offsets));
         }
@@ -116,11 +123,12 @@ public:
 private:
 
     template <typename ExtractorType, typename StringColumnType, typename ResultStringColumnType>
-    inline void executeImpl(
+    void executeImpl(
         const ExtractorType & extractor,
         StringColumnType & input_data_column,
         ResultStringColumnType & result_data_column,
-        ColumnArray::ColumnOffsets & offsets_column) const
+        ColumnArray::ColumnOffsets & offsets_column,
+        const ColumnUInt8::Container * null_map) const
     {
         size_t current_tokens_size = 0;
         auto & offsets_data = offsets_column.getData();
@@ -128,22 +136,38 @@ private:
         size_t column_size = input_data_column.size();
         offsets_data.resize(column_size);
 
-        for (size_t i = 0; i < column_size; ++i)
+        auto work = [&]<bool has_null>()
         {
-            auto data = input_data_column.getDataAt(i);
-
-            size_t cur = 0;
-            size_t token_start = 0;
-            size_t token_length = 0;
-
-            while (cur < data.size && extractor.nextInString(data.data, data.size, &cur, &token_start, &token_length))
+            for (size_t i = 0; i < column_size; ++i)
             {
-                result_data_column.insertData(data.data + token_start, token_length);
-                ++current_tokens_size;
-            }
+                if constexpr (has_null)
+                {
+                    if ((*null_map)[i])
+                    {
+                        offsets_data[i] = current_tokens_size;
+                        continue;
+                    }
+                }
+                auto data = input_data_column.getDataAt(i);
 
-            offsets_data[i] = current_tokens_size;
-        }
+                size_t cur = 0;
+                size_t token_start = 0;
+                size_t token_length = 0;
+
+                while (cur < data.size && extractor.nextInStringPadded(data.data, data.size, &cur, &token_start, &token_length))
+                {
+                    result_data_column.insertData(data.data + token_start, token_length);
+                    ++current_tokens_size;
+                }
+
+                offsets_data[i] = current_tokens_size;
+            }
+        };
+
+        if (null_map)
+            work.template operator()<true>();
+        else
+            work.template operator()<false>();
     }
 };
 
@@ -154,5 +178,3 @@ REGISTER_FUNCTION(StringTokenExtractor)
 }
 
 }
-
-
